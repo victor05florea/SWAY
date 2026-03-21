@@ -69,30 +69,54 @@ public class SwayData {
     private String avatarUrl;
 
     //Preferences
-    @Column(name = "pref_toggleknife") private Integer prefToggleKnife;
-    @Column(name = "pref_sound") private Boolean prefSound; // tinyint(1) devine Boolean în Java
-    @Column(name = "pref_hitsound") private Boolean prefHitSound;
-    @Column(name = "pref_hideteam") private Boolean prefHideTeam;
-    @Column(name = "pref_clantag") private Integer prefClanTag;
-    @Column(name = "pref_speccolor") private Integer prefSpecColor;
-    @Column(name = "pref_beamcolor") private Integer prefBeamColor;
-    @Column(name = "pref_pin") private Integer prefPin;
-    @Column(name = "pref_icon") private Integer prefIcon;
-    @Column(name = "pref_rankicon") private Integer prefRankIcon;
-    @Column(name = "pref_fov") private Integer prefFov;
-    @Column(name = "pref_skybox") private Integer prefSkybox;
-    @Column(name = "pref_flashcolor") private Boolean prefFlashColor;
-    @Column(name = "pref_spawneffect") private Integer prefSpawnEffect;
-    @Column(name = "pref_gasnades") private Boolean prefGasNades;
-    @Column(name = "pref_speclist") private Boolean prefSpecList;
-    @Column(name = "pref_noclipkey") private Boolean prefNoclipKey;
-    @Column(name = "pref_knifect") private Boolean prefKnifeCt;
-    @Column(name = "pref_jssounds") private Boolean prefJsSounds;
-    @Column(name = "pref_speedtype") private Integer prefSpeedType;
-    @Column(name = "pref_colorchat") private Integer prefColorChat;
-    @Column(name = "pref_speedcolor") private Integer prefSpeedColor;
-    @Column(name = "pref_speedy") private Float prefSpeedy;
-    @Column(name = "pref_syncstats") private Boolean prefSyncStats;
+    @Column(name = "pref_toggleknife")
+    private Integer prefToggleKnife;
+    @Column(name = "pref_sound")
+    private Boolean prefSound; // tinyint(1) devine Boolean în Java
+    @Column(name = "pref_hitsound")
+    private Boolean prefHitSound;
+    @Column(name = "pref_hideteam")
+    private Boolean prefHideTeam;
+    @Column(name = "pref_clantag")
+    private Integer prefClanTag;
+    @Column(name = "pref_speccolor")
+    private Integer prefSpecColor;
+    @Column(name = "pref_beamcolor")
+    private Integer prefBeamColor;
+    @Column(name = "pref_pin")
+    private Integer prefPin;
+    @Column(name = "pref_icon")
+    private Integer prefIcon;
+    @Column(name = "pref_rankicon")
+    private Integer prefRankIcon;
+    @Column(name = "pref_fov")
+    private Integer prefFov;
+    @Column(name = "pref_skybox")
+    private Integer prefSkybox;
+    @Column(name = "pref_flashcolor")
+    private Boolean prefFlashColor;
+    @Column(name = "pref_spawneffect")
+    private Integer prefSpawnEffect;
+    @Column(name = "pref_gasnades")
+    private Boolean prefGasNades;
+    @Column(name = "pref_speclist")
+    private Boolean prefSpecList;
+    @Column(name = "pref_noclipkey")
+    private Boolean prefNoclipKey;
+    @Column(name = "pref_knifect")
+    private Boolean prefKnifeCt;
+    @Column(name = "pref_jssounds")
+    private Boolean prefJsSounds;
+    @Column(name = "pref_speedtype")
+    private Integer prefSpeedType;
+    @Column(name = "pref_colorchat")
+    private Integer prefColorChat;
+    @Column(name = "pref_speedcolor")
+    private Integer prefSpeedColor;
+    @Column(name = "pref_speedy")
+    private Float prefSpeedy;
+    @Column(name = "pref_syncstats")
+    private Boolean prefSyncStats;
 
     //Mix stats
     private Integer mixgames;
@@ -102,4 +126,29 @@ public class SwayData {
     private Integer mixdisconnects;
     private Integer mixtotalfalldmg;
     private Integer mixelo;
+
+
+    @Transient
+    private JumpStatPre jumpStatsPre;
+
+    @Transient
+    private JumpStatNoPre jumpStatsNoPre;
+
+    // Getter inteligent: lasă variabila Integer, dar trimite un String către Controller
+    public String getSteamId() {
+        if (this.steamid == null) {
+            return null;
+        }
+        // String.valueOf() este varianta antiglonț a lui .toString()
+        return String.valueOf(this.steamid);
+    }
+
+    public void setJumpStatsPre(JumpStatPre jumpStatsPre) {
+        this.jumpStatsPre = jumpStatsPre;
+    }
+
+    // Setter pentru datele NOPRE (Asta rezolvă eroarea ta!)
+    public void setJumpStatsNoPre(JumpStatNoPre jumpStatsNoPre) {
+        this.jumpStatsNoPre = jumpStatsNoPre;
+    }
 }

@@ -1,56 +1,68 @@
 package sway.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import sway.entity.SwayData;
 import sway.repository.SwayDataRepository;
-import java.util.List;
+import sway.repository.JumpStatPreRepository;
+import sway.repository.JumpStatNoPreRepository;
 
-@CrossOrigin(origins = "http://localhost:5173") // Îi dăm voie React-ului să ne ceară date
-@RestController // Îi spune lui Spring că această clasă va returna date (JSON), nu pagini HTML
-@RequestMapping("/api/players") // Aceasta va fi baza URL-ului nostru
+import java.util.List;
+import java.util.Optional;
+
+@CrossOrigin(origins = "http://localhost:5173")
+@RestController
+@RequestMapping("/api/players")
 public class SwayDataController {
 
-    // Aducem "Fereastra" către baza de date aici
-    private final SwayDataRepository repository;
-
-    // Constructorul este modul profesional de a injecta Repository-ul (Dependency Injection)
-    public SwayDataController(SwayDataRepository repository) {
-        this.repository = repository;
-    }
-
+    // 1. Aducem Repository-ul principal (Baza de date generală)
     @Autowired
     private SwayDataRepository swayDataRepository;
 
+    // 2. Aducem noile Repositoare pentru sărituri
+    @Autowired
+    private JumpStatPreRepository preRepo;
+
+    @Autowired
+    private JumpStatNoPreRepository noPreRepo;
+
+    // RUTA 1: Returnează toți jucătorii (folosită de Leaderboard)
     @GetMapping("/all")
     public List<SwayData> getAllPlayers() {
-        // Acum Java știe exact cine este swayDataRepository!
         return swayDataRepository.findAll();
     }
 
-    // Rută NOUĂ: Caută un singur jucător după ID
+    // RUTA 2: Returnează un singur jucător + datele lui de Jump (folosită de Profil)
     @GetMapping("/{id}")
-    public org.springframework.http.ResponseEntity<SwayData> getPlayerById(@org.springframework.web.bind.annotation.PathVariable Integer id) {
-        return swayDataRepository.findById(id)
-                .map(player -> org.springframework.http.ResponseEntity.ok().body(player))
-                .orElse(org.springframework.http.ResponseEntity.notFound().build());
+    public ResponseEntity<SwayData> getPlayerById(@PathVariable Integer id) {
+
+        Optional<SwayData> playerOpt = swayDataRepository.findById(id);
+
+        if (playerOpt.isPresent()) {
+            SwayData player = playerOpt.get();
+            String steamId = player.getSteamId();
+
+            if (steamId != null && !steamId.isEmpty()) {
+                // SCUT PENTRU DATELE PRE
+                try {
+                    preRepo.findBySteamid(steamId).ifPresent(player::setJumpStatsPre);
+                } catch (Exception e) {
+                    System.out.println("⚠️ Eroare PRE pentru SteamID " + steamId + ": " + e.getMessage());
+                }
+
+                // SCUT PENTRU DATELE NOPRE
+                try {
+                    noPreRepo.findBySteamid(steamId).ifPresent(player::setJumpStatsNoPre);
+                } catch (Exception e) {
+                    System.out.println("⚠️ Eroare NOPRE pentru SteamID " + steamId + ": " + e.getMessage());
+                }
+            }
+
+            // Profilul se va afișa MEREU, chiar dacă săriturile dau eroare!
+            return ResponseEntity.ok().body(player);
+        }
+
+        return ResponseEntity.notFound().build();
     }
-
-    // Aceasta va fi afișată când accesezi doar localhost:8080
-    @GetMapping("/")
-    public String home() {
-        return "Backend-ul pentru serverul de CS2 SWAY este ACTIV și conectat la baza de date! 🚀";
-    }
-
-    // Când cineva accesează /api/players/top, se va rula această metodă
-    @GetMapping("/top")
-    public List<SwayData> getTopPlayers() {
-        // Folosim metoda magică pe care am definit-o în Repository
-        return repository.findTop10ByOrderByKillsDesc();
-    }
-
-
 }

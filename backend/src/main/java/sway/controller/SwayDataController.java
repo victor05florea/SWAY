@@ -31,6 +31,14 @@ public class SwayDataController {
         return swayDataRepository.findAll();
     }
 
+    // Rută NOUĂ: Caută un singur jucător după ID
+    @GetMapping("/{id}")
+    public org.springframework.http.ResponseEntity<SwayData> getPlayerById(@org.springframework.web.bind.annotation.PathVariable Integer id) {
+        return swayDataRepository.findById(id)
+                .map(player -> org.springframework.http.ResponseEntity.ok().body(player))
+                .orElse(org.springframework.http.ResponseEntity.notFound().build());
+    }
+
     // Aceasta va fi afișată când accesezi doar localhost:8080
     @GetMapping("/")
     public String home() {

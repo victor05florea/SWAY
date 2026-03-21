@@ -2,6 +2,7 @@ package sway.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name="SWAY_Data")
@@ -129,9 +130,11 @@ public class SwayData {
 
 
     @Transient
+    @JsonProperty("jumpStatsPre")
     private JumpStatPre jumpStatsPre;
 
     @Transient
+    @JsonProperty("jumpStatsNoPre")
     private JumpStatNoPre jumpStatsNoPre;
 
     // Getter inteligent: lasă variabila Integer, dar trimite un String către Controller
@@ -146,9 +149,27 @@ public class SwayData {
     public void setJumpStatsPre(JumpStatPre jumpStatsPre) {
         this.jumpStatsPre = jumpStatsPre;
     }
-
-    // Setter pentru datele NOPRE (Asta rezolvă eroarea ta!)
     public void setJumpStatsNoPre(JumpStatNoPre jumpStatsNoPre) {
         this.jumpStatsNoPre = jumpStatsNoPre;
     }
+    public JumpStatPre getJumpStatsPre() {
+        return this.jumpStatsPre;
+    }
+    public JumpStatNoPre getJumpStatsNoPre() {
+        return this.jumpStatsNoPre;
+    }
+
+
+    @Transient
+    private Integer serverRank;
+
+    public Integer getServerRank() {
+        return serverRank;
+    }
+
+    public void setServerRank(Integer serverRank) {
+        this.serverRank = serverRank;
+    }
+
+
 }

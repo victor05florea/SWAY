@@ -9,14 +9,11 @@ import lombok.Data;
 public class JumpStatNoPre {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
-
     @Column(name = "steamid")
     private String steamid;
 
     @Column(name = "LJ_record")
-    private Float longjump; // Le-am redenumit ca să se potrivească perfect cu React!
+    private Float longjump;
 
     @Column(name = "CJ_record")
     private Float countjump;

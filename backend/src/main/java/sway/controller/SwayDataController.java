@@ -41,25 +41,61 @@ public class SwayDataController {
 
         if (playerOpt.isPresent()) {
             SwayData player = playerOpt.get();
-            String steamId = player.getSteamId();
+            String rawSteamId = player.getSteamId();
 
-            if (steamId != null && !steamId.isEmpty()) {
-                // SCUT PENTRU DATELE PRE
-                try {
-                    preRepo.findBySteamid(steamId).ifPresent(player::setJumpStatsPre);
-                } catch (Exception e) {
-                    System.out.println("⚠️ Eroare PRE pentru SteamID " + steamId + ": " + e.getMessage());
+            if (rawSteamId != null && !rawSteamId.isEmpty()) {
+
+                // 1. TRANSLATORUL MAGIC
+                String targetSteamId = rawSteamId; // Presupunem inițial că e deja text
+                String alternativeSteamId = rawSteamId; // O rezervă pentru serverele vechi
+
+                // Dacă ID-ul este doar un număr (cum e 371937544), îl transformăm în formatul STEAM_1:Y:Z
+                if (rawSteamId.matches("\\d+")) {
+                    try {
+                        long accountId = Long.parseLong(rawSteamId);
+                        long y = accountId % 2;
+                        long z = accountId / 2;
+                        targetSteamId = "STEAM_1:" + y + ":" + z;
+                        alternativeSteamId = "STEAM_0:" + y + ":" + z; // În caz că pluginul salvează cu STEAM_0
+
+                        System.out.println("🔄 Am tradus ID-ul " + rawSteamId + " în " + targetSteamId);
+                    } catch (Exception e) {
+                        System.out.println("Eroare la traducerea SteamID-ului: " + e.getMessage());
+                    }
                 }
 
-                // SCUT PENTRU DATELE NOPRE
+                // 2. Căutăm datele PRE cu ID-ul tradus
                 try {
-                    noPreRepo.findBySteamid(steamId).ifPresent(player::setJumpStatsNoPre);
+                    // Încercăm prima dată cu STEAM_1...
+                    Optional<sway.entity.JumpStatPre> preData = preRepo.findBySteamid(targetSteamId);
+                    // Dacă nu merge, încercăm cu STEAM_0...
+                    if (preData.isEmpty()) {
+                        preData = preRepo.findBySteamid(alternativeSteamId);
+                    }
+
+                    preData.ifPresent(player::setJumpStatsPre);
                 } catch (Exception e) {
-                    System.out.println("⚠️ Eroare NOPRE pentru SteamID " + steamId + ": " + e.getMessage());
+                    System.out.println("⚠️ EROARE PRE: " + e.getMessage());
+                }
+
+                // 3. Căutăm datele NOPRE cu ID-ul tradus
+                try {
+                    Optional<sway.entity.JumpStatNoPre> noPreData = noPreRepo.findBySteamid(targetSteamId);
+                    if (noPreData.isEmpty()) {
+                        noPreData = noPreRepo.findBySteamid(alternativeSteamId);
+                    }
+
+                    noPreData.ifPresent(player::setJumpStatsNoPre);
+                } catch (Exception e) {
+                    System.out.println("⚠️ EROARE NOPRE: " + e.getMessage());
                 }
             }
 
-            // Profilul se va afișa MEREU, chiar dacă săriturile dau eroare!
+            // Calculăm Rank-ul
+            int kills = player.getKills() != null ? player.getKills() : 0;
+            int rank = swayDataRepository.countByKillsGreaterThan(kills) + 1;
+            player.setServerRank(rank);
+
             return ResponseEntity.ok().body(player);
         }
 

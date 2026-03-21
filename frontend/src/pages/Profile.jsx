@@ -5,8 +5,6 @@ export default function Profile() {
   const { id } = useParams();
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
-  
-  // NOU: Memoria pentru butonul de Jump Stats (PRE vs NOPRE)
   const [jumpMode, setJumpMode] = useState("PRE");
 
   useEffect(() => {
@@ -25,17 +23,30 @@ export default function Profile() {
       });
   }, [id]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-primary-dim font-headline text-2xl animate-pulse uppercase">Establishing secure connection...</div>;
-  if (!player) return <div className="min-h-screen flex items-center justify-center text-gray-500 font-headline text-2xl uppercase">Operator Identity Not Found.</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-primary-dim font-headline text-2xl animate-pulse uppercase tracking-widest">Establishing secure connection...</div>;
+  if (!player) return <div className="min-h-screen flex items-center justify-center text-gray-500 font-headline text-2xl uppercase tracking-widest">Operator Identity Not Found.</div>;
 
   const kdRatio = (player.kills / (player.deaths || 1)).toFixed(2);
   const steamLink = player.steamId ? `https://steamcommunity.com/profiles/${player.steamId}` : `https://steamcommunity.com/search/users/#text=${player.name}`;
 
-  // Logica viitoare pentru a alege datele corecte de pe backend
-  // Când fratele tău va face backend-ul, datele vor veni probabil sub formă de obiecte separate
   const currentJumpStats = jumpMode === "PRE" 
     ? (player.jumpStatsPre || {}) 
     : (player.jumpStatsNoPre || {});
+
+  // Funcție pentru afișare condiționată (doar dacă valoarea > 0 și != -1)
+  const renderJumpStat = (label, value) => {
+    const val = parseFloat(value);
+    if (!value || val <= 0) return null; // Ascunde dacă e 0, null sau -1 (default SQL)
+    
+    return (
+      <div className="flex justify-between items-end border-b border-outline-variant/10 pb-2 hover:bg-white/[0.02] transition-colors px-2">
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</span>
+        <span className="font-headline font-bold text-lg text-white tracking-tighter">
+          {val.toFixed(2)} <span className="text-[10px] text-gray-600 uppercase ml-1">Units</span>
+        </span>
+      </div>
+    );
+  };
 
   return (
     <div className="relative pt-32 pb-20 px-4 md:px-8 max-w-7xl mx-auto space-y-8 animate-fade-in">
@@ -56,7 +67,9 @@ export default function Profile() {
           <div className="flex-1 text-center md:text-left space-y-2">
             <span className="font-headline text-5xl md:text-7xl font-black tracking-tighter text-white uppercase leading-none">{player.name}</span>
             <div className="flex flex-col gap-1 mt-2">
-              <span className="font-headline text-primary-dim tracking-[0.4em] text-sm md:text-base font-bold uppercase">Database ID: #{player.id}</span>
+              <span className="font-headline text-primary-dim tracking-[0.4em] text-sm md:text-base font-bold uppercase">
+                 Server Rank: #{player.serverRank || 'Unranked'}
+              </span>
               <span className="font-headline text-gray-500 tracking-[0.2em] text-xs uppercase">Status: Active Operator</span>
             </div>
           </div>
@@ -71,75 +84,41 @@ export default function Profile() {
         </div>
       </section>
 
-      {/* BENTO GRID */}
+      {/* BENTO GRID REARANJAT */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
         
-        {/* 1. SERVICE RECORD */}
-        <div className="lg:col-span-2 bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 space-y-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
-          <div className="flex items-center justify-between border-b border-outline-variant/10 pb-4">
-            <h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Service Record</h3>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="space-y-1">
-              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Total Time</p>
-              <p className="font-headline text-2xl font-bold text-white">{player.totalPlaytime || '0'} <span className="text-xs text-gray-500">HRS</span></p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Last 7 Days</p>
-              <p className="font-headline text-2xl font-bold text-primary-dim">{player.weeklyPlaytime || '0'} <span className="text-xs text-gray-500">HRS</span></p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Ownages</p>
-              <p className="font-headline text-2xl font-bold text-white">{player.ownages || '0'}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Wreckers</p>
-              <p className="font-headline text-2xl font-bold text-white">{player.wreckers || '0'}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* 2. PERSONAL BESTS (AICI E COMUTATORUL NOU) */}
-        <div className="lg:col-span-2 bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 space-y-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
+        {/* 1. PERSONAL BESTS (MUTAT ÎN STÂNGA - OCUPĂ 2 COLOANE) */}
+        <div className="lg:col-span-2 bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 space-y-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] group hover:bg-surface-container-high transition-all duration-500">
           <div className="flex items-center justify-between border-b border-outline-variant/10 pb-4">
             <h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Personal Bests</h3>
-            
-            {/* TOGGLE PRE / NOPRE */}
             <div className="flex bg-background border border-outline-variant/20 p-1">
-              <button 
-                onClick={() => setJumpMode("PRE")}
-                className={`px-3 py-1 font-headline text-[10px] uppercase tracking-widest transition-colors ${jumpMode === "PRE" ? "bg-primary-dim text-white" : "text-gray-500 hover:text-white"}`}
-              >
-                PRE
-              </button>
-              <button 
-                onClick={() => setJumpMode("NOPRE")}
-                className={`px-3 py-1 font-headline text-[10px] uppercase tracking-widest transition-colors ${jumpMode === "NOPRE" ? "bg-primary-dim text-white" : "text-gray-500 hover:text-white"}`}
-              >
-                NOPRE
-              </button>
+              <button onClick={() => setJumpMode("PRE")} className={`px-3 py-1 font-headline text-[10px] uppercase tracking-widest transition-colors ${jumpMode === "PRE" ? "bg-primary-dim text-white" : "text-gray-500 hover:text-white"}`}>PRE</button>
+              <button onClick={() => setJumpMode("NOPRE")} className={`px-3 py-1 font-headline text-[10px] uppercase tracking-widest transition-colors ${jumpMode === "NOPRE" ? "bg-primary-dim text-white" : "text-gray-500 hover:text-white"}`}>NOPRE</button>
             </div>
           </div>
 
-          {/* DATELE SCHIMBĂTOARE */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-end border-b border-outline-variant/10 pb-2">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Long Jump</span>
-              <span className="font-headline font-bold text-lg text-white tracking-tighter">{currentJumpStats.longjump || '0.00'} <span className="text-[10px] text-gray-600 uppercase ml-1">Units</span></span>
-            </div>
-            <div className="flex justify-between items-end border-b border-outline-variant/10 pb-2">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Count Jump</span>
-              <span className="font-headline font-bold text-lg text-white tracking-tighter">{currentJumpStats.countjump || '0.00'} <span className="text-[10px] text-gray-600 uppercase ml-1">Units</span></span>
-            </div>
-            <div className="flex justify-between items-end">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Bhop</span>
-              <span className="font-headline font-bold text-lg text-white tracking-tighter">{currentJumpStats.bhop || '0.00'} <span className="text-[10px] text-gray-600 uppercase ml-1">Units</span></span>
-            </div>
+          <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            {/* Listă completă conform SQL-ului tău */}
+            {renderJumpStat("Long Jump", currentJumpStats.longjump)}
+            {renderJumpStat("Count Jump", currentJumpStats.countjump)}
+            {renderJumpStat("Bhop", currentJumpStats.bhop)}
+            {renderJumpStat("Multi Bhop", currentJumpStats.MBJ_record)}
+            {renderJumpStat("Weird Jump", currentJumpStats.WJ_record)}
+            {renderJumpStat("Drop Standup Bhop", currentJumpStats.dropstandupbhoprecord)}
+            {renderJumpStat("Ladder Jump", currentJumpStats.LAJ_record)}
+            {renderJumpStat("Ladder Bhop", currentJumpStats.ladderbhoprecord)}
+            
+            {/* Mesaj dacă nu are nicio săritură în modul selectat */}
+            {Object.values(currentJumpStats).every(v => !v || parseFloat(v) <= 0) && (
+               <div className="text-center py-10 text-gray-600 font-headline text-xs uppercase tracking-widest">
+                 No {jumpMode} jump records found.
+               </div>
+            )}
           </div>
         </div>
 
-        {/* 3. COMBAT RECORD */}
-        <div className="lg:col-span-2 bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 space-y-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
+        {/* 2. COMBAT RECORD (MUTAT ÎN DREAPTA) */}
+        <div className="lg:col-span-2 bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 space-y-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] group hover:bg-surface-container-high transition-all duration-500">
           <div className="flex items-center justify-between border-b border-outline-variant/10 pb-4">
             <h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Combat Record</h3>
           </div>
@@ -159,8 +138,33 @@ export default function Profile() {
           </div>
         </div>
 
+        {/* 3. SERVICE RECORD */}
+        <div className="lg:col-span-2 bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 space-y-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] group hover:bg-surface-container-high transition-all duration-500">
+          <div className="flex items-center justify-between border-b border-outline-variant/10 pb-4">
+            <h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Service Record</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="space-y-1">
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Total Time</p>
+              <p className="font-headline text-2xl font-bold text-white">{(player.time / 3600).toFixed(1)} <span className="text-xs text-gray-500">HRS</span></p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Last 7 Days</p>
+              <p className="font-headline text-2xl font-bold text-primary-dim">{(player.weektime / 3600).toFixed(1)} <span className="text-xs text-gray-500">HRS</span></p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Ownages</p>
+              <p className="font-headline text-2xl font-bold text-white">{player.ownages || '0'}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Wreckers</p>
+              <p className="font-headline text-2xl font-bold text-white">{player.wreckers || '0'}</p>
+            </div>
+          </div>
+        </div>
+
         {/* 4. KINETICS */}
-        <div className="lg:col-span-2 bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 space-y-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
+        <div className="lg:col-span-2 bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 space-y-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] group hover:bg-surface-container-high transition-all duration-500">
           <div className="flex items-center justify-between border-b border-outline-variant/10 pb-4">
             <h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Kinetics</h3>
           </div>
@@ -171,7 +175,7 @@ export default function Profile() {
                 <span className="font-headline font-bold text-xl text-white">{player.jumps || '0'}</span>
               </div>
               <div className="h-1.5 bg-background overflow-hidden border border-outline-variant/20">
-                <div className="h-full bg-primary-dim w-[85%]"></div>
+                <div className="h-full bg-primary-dim w-[85%] shadow-[0_0_10px_rgba(233,0,54,0.3)]"></div>
               </div>
             </div>
             <div>

@@ -1,5 +1,6 @@
 package sway.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +20,15 @@ public class SwayDataController {
     // Constructorul este modul profesional de a injecta Repository-ul (Dependency Injection)
     public SwayDataController(SwayDataRepository repository) {
         this.repository = repository;
+    }
+
+    @Autowired
+    private SwayDataRepository swayDataRepository;
+
+    @GetMapping("/all")
+    public List<SwayData> getAllPlayers() {
+        // Acum Java știe exact cine este swayDataRepository!
+        return swayDataRepository.findAll();
     }
 
     // Aceasta va fi afișată când accesezi doar localhost:8080

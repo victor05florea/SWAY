@@ -1,8 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
-body {
-  background-color: #0f172a;
-  color: white;
-  margin: 0;
-  font-family: sans-serif;
+@theme {
+  --color-background: #0e0e0e;
+  --color-surface: #0e0e0e;
+  --color-surface-container-low: #131313;
+  --color-surface-container-high: #201f1f;
+  --color-primary-dim: #e90036;
+  --color-sway-red: #FF003C;
+  --color-outline-variant: #494847;
+  --font-headline: "Space Grotesk", sans-serif;
+  --font-body: "Inter", sans-serif;
 }
+
+body {
+  background-color: var(--color-background);
+  color: white;
+  font-family: var(--font-body);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Pattern-ul subtil cerut in design */
+.grid-pattern {
+  background-image: radial-gradient(#494847 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.05;
+}
+
+.hero-gradient {
+  background: linear-gradient(135deg, rgba(233, 0, 54, 0.1) 0%, rgba(14, 14, 14, 0) 50%);
+}
+
+/* Suprascriem scrollbar-ul sa fie brutalist */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0e0e0e; }
+::-webkit-scrollbar-thumb { background: #e90036; }

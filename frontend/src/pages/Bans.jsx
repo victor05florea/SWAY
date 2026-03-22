@@ -115,8 +115,8 @@ export default function Bans() {
           <h1 className="font-headline text-5xl md:text-7xl font-black uppercase tracking-tighter text-white leading-none">
             Hall of <span className="text-primary-dim">Shame</span>
           </h1>
-          <p className="text-[10px] text-gray-500 font-headline tracking-[0.4em] uppercase mt-2">
-            Restricted System Log // Total Violations: {cheaters.length}
+          <p className="text-[16px] text-gray-500 font-headline tracking-[0.1em] uppercase mt-2">
+            <span className="text-red-500">{cheaters.length}</span> BANNED PLAYERS
           </p>
         </div>
       </div>

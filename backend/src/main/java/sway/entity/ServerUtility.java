@@ -7,12 +7,25 @@ import lombok.Data;
 @Table(name = "SWAY_Utilities")
 @Data
 public class ServerUtility {
+
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    private Integer server; // 1, 2 sau 3
+    private Integer server;
     private String name;
     private String map;
     private String players;
     private String maxplayers;
+
+    // Format așteptat: "ro|crash|123456789;en|john|987654321"
+    private String terrorists;
+
+    @Column(name = "counterterrorists") // Ne asigurăm că mapează exact numele din SQL
+    private String counterterrorists;
+
+    private String spectators;
+    private String funjumpers;
+
+    private String serverip; // IP-ul a fost adăugat direct în baza de date!
 }

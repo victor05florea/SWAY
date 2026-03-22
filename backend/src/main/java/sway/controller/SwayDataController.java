@@ -3,7 +3,9 @@ package sway.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import sway.entity.ServerUtility;
 import sway.entity.SwayData;
+import sway.repository.ServerUtilityRepository;
 import sway.repository.SwayDataRepository;
 import sway.repository.JumpStatPreRepository;
 import sway.repository.JumpStatNoPreRepository;
@@ -27,10 +29,18 @@ public class SwayDataController {
     @Autowired
     private JumpStatNoPreRepository noPreRepo;
 
+    @Autowired
+    private ServerUtilityRepository serverUtilityRepository;
+
     // RUTA 1: Returnează toți jucătorii (folosită de Leaderboard)
     @GetMapping("/all")
     public List<SwayData> getAllPlayers() {
         return swayDataRepository.findAll();
+    }
+
+    @GetMapping("/status") // Atenție: adresa va fi /api/players/status
+    public List<ServerUtility> getServersStatus() {
+        return serverUtilityRepository.findAll();
     }
 
     // RUTA 2: Returnează un singur jucător + datele lui de Jump (folosită de Profil)
@@ -119,4 +129,5 @@ public class SwayDataController {
 
         return ResponseEntity.notFound().build();
     }
+
 }

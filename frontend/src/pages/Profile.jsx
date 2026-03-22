@@ -10,14 +10,39 @@ export default function Profile() {
   const [jumpMode, setJumpMode] = useState("PRE");
 
   useEffect(() => {
+    // 1. Dacă din greșeală link-ul este gol sau stricat, ne oprim.
+    if (!id || id === "undefined") {
+      setLoading(false);
+      return;
+    }
+
     fetch(`http://localhost:8080/api/players/${id}`)
-      .then(res => res.json())
-      .then(data => { setPlayer(data); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(res => {
+        // 2. Dacă Java ne spune că nu l-a găsit (Eroare 404 sau 500)
+        if (!res.ok) {
+          throw new Error("Jucătorul nu a fost găsit în baza de date.");
+        }
+        return res.json();
+      })
+      .then(data => {
+        // 3. Extra-protecție: Dacă Java ne trimite un JSON de eroare în loc de profil
+        if (data.error || !data.name) {
+          throw new Error("Date invalide primite de la server.");
+        }
+        setPlayer(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Eroare la încărcarea profilului:", err);
+        setPlayer(null); // Forțăm playerul să fie null ca să apară mesajul "Not Found"
+        setLoading(false);
+      });
   }, [id]);
 
-  if (loading || !player) return <div className="min-h-screen flex items-center justify-center text-primary-dim font-headline text-2xl animate-pulse uppercase tracking-widest">Establishing secure connection...</div>;
-
+  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center font-headline text-primary-dim text-2xl animate-pulse tracking-widest uppercase">Establishing secure connection...</div>;
+  
+  if (!player) return <div className="min-h-screen bg-background flex items-center justify-center text-gray-500 font-headline text-2xl tracking-widest uppercase">Operator Identity Not Found in Database.</div>;
+ 
   const preStats = player.jumpStatsPre || {};
   const noPreStats = player.jumpStatsNoPre || {};
   const currentStats = jumpMode === "PRE" ? preStats : noPreStats;

@@ -80,43 +80,71 @@ export default function Leaderboard() {
 
         {/* TABELUL DINAMIC */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse whitespace-nowrap">
             <thead className="text-gray-500 font-headline text-xs uppercase tracking-[0.2em] border-b border-outline-variant/20 bg-surface-container-high/50">
               <tr>
                 <th className="py-4 pl-4 pr-8 font-normal">Rank</th>
                 <th className="py-4 px-8 font-normal">Operator</th>
                 <th className="py-4 px-8 font-normal">Kills</th>
                 <th className="py-4 px-8 font-normal">Deaths</th>
-                {/* Afișăm coloana Ratio DOAR dacă suntem pe tab-ul MIX */}
                 {activeMode === 'MIX' && (
                   <th className="py-4 px-8 font-normal text-primary-dim">Ratio</th>
                 )}
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/5">
-  {displayedPlayers.map((player, index) => (
-    <tr 
-      key={player.id || index} 
-      onClick={() => navigate(`/profile/${player.id}`)} // MAGIA: Te trimite pe profilul lui!
-      className="hover:bg-white/[0.05] transition-colors group cursor-pointer" // Am adaugat cursor-pointer
-    >
-      <td className="py-4 pl-4 pr-8 font-headline font-bold text-xl text-gray-500 group-hover:text-primary-dim transition-colors">
-        {index < 9 ? `0${index + 1}` : index + 1}
-      </td>
-      <td className="py-4 px-8 font-headline font-bold text-lg text-white uppercase tracking-wider group-hover:text-white">
-        {player.name}
-      </td>
-                  <td className="py-4 px-8 text-gray-300">{player.kills}</td>
-                  <td className="py-4 px-8 text-gray-500">{player.deaths}</td>
-                  
-                  {/* Afișăm datele Ratio DOAR dacă suntem pe tab-ul MIX */}
-                  {activeMode === 'MIX' && (
-                    <td className="py-4 px-8 font-headline font-bold text-primary-dim text-xl bg-primary-dim/5">
-                      {(player.kills / (player.deaths || 1)).toFixed(2)}
+              {displayedPlayers.map((player, index) => {
+                // REZOLVAREA E AICI: Folosim steamId (I mare) sau steamid (i mic), oricare există
+                const safeSteamId = player.steamId || player.steamid;
+
+                return (
+                  <tr 
+                    key={safeSteamId || index} 
+                    onClick={() => safeSteamId && navigate(`/profile/${safeSteamId}`)} 
+                    className="hover:bg-white/[0.05] transition-colors group cursor-pointer"
+                  >
+                    <td className="py-4 pl-4 pr-8 font-headline font-bold text-xl text-gray-500 group-hover:text-primary-dim transition-colors">
+                      {index < 9 ? `0${index + 1}` : index + 1}
                     </td>
-                  )}
-                </tr>
-              ))}
+                    
+                    {/* COLOANA OPERATOR (Acum cu Steag și Avatar) */}
+                    <td className="py-4 px-8 flex items-center gap-4">
+                      {/* Steag Steam (dacă ai coloana country în SwayData) */}
+                      {player.country && player.country.length > 0 ? (
+                        <img 
+                          src={`https://community.fastly.steamstatic.com/public/images/countryflags/${player.country.toLowerCase()}.gif`} 
+                          alt={player.country} 
+                          className="w-[22px] h-[16px] shadow-[0_0_5px_rgba(0,0,0,0.5)] opacity-80 group-hover:opacity-100 transition-opacity"
+                          onError={(e) => { e.target.style.display = 'none'; }} 
+                        />
+                      ) : (
+                        <div className="w-[22px]"></div> /* Placeholder (spațiu) dacă nu are țară */
+                      )}
+
+                      {/* Avatar */}
+                      <img 
+                        src={player.avatarUrl || player.avatarurl || `https://api.dicebear.com/7.x/bottts/svg?seed=${player.name}&backgroundColor=0e0e0e`} 
+                        alt="avatar" 
+                        className="w-8 h-8 object-cover border border-outline-variant/30 grayscale opacity-80 group-hover:grayscale-0 group-hover:border-primary-dim transition-all"
+                      />
+                      
+                      {/* Nume Jucător */}
+                      <span className="font-headline font-bold text-lg text-white uppercase tracking-wider group-hover:text-primary-dim transition-colors">
+                        {player.name}
+                      </span>
+                    </td>
+
+                    <td className="py-4 px-8 text-gray-300 font-mono text-lg">{player.kills}</td>
+                    <td className="py-4 px-8 text-gray-500 font-mono text-lg">{player.deaths}</td>
+                    
+                    {activeMode === 'MIX' && (
+                      <td className="py-4 px-8 font-headline font-bold text-primary-dim text-xl bg-primary-dim/5">
+                        {(player.kills / (player.deaths || 1)).toFixed(2)}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 

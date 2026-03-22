@@ -35,9 +35,27 @@ public class SwayDataController {
 
     // RUTA 2: Returnează un singur jucător + datele lui de Jump (folosită de Profil)
     @GetMapping("/{id}")
-    public ResponseEntity<SwayData> getPlayerById(@PathVariable Integer id) {
+    public ResponseEntity<SwayData> getPlayerById(@PathVariable String id) {
 
-        Optional<SwayData> playerOpt = swayDataRepository.findById(id);
+        Optional<SwayData> playerOpt = Optional.empty();
+
+        try {
+            // Transformăm textul din link în număr
+            Integer numericId = Integer.parseInt(id);
+
+            // 2. TRUCUL: Încercăm prima dată să-l găsim după SteamID (ex: 371937544 din Bans)
+            try {
+                playerOpt = swayDataRepository.findBySteamid(numericId);
+            } catch (Exception e) {}
+
+            // 3. TRUCUL: Dacă nu-l găsește, înseamnă că e ID-ul mic (ex: 1, 2, 3 din Leaderboard). Îl căutăm acolo!
+            if (playerOpt.isEmpty()) {
+                playerOpt = swayDataRepository.findById(numericId);
+            }
+
+        } catch (NumberFormatException e) {
+            System.out.println("ID Invalid primit de la React: " + id);
+        }
 
         if (playerOpt.isPresent()) {
             SwayData player = playerOpt.get();

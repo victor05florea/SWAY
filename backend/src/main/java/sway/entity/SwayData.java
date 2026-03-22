@@ -73,7 +73,7 @@ public class SwayData {
     @Column(name = "pref_toggleknife")
     private Integer prefToggleKnife;
     @Column(name = "pref_sound")
-    private Boolean prefSound; // tinyint(1) devine Boolean în Java
+    private Boolean prefSound;
     @Column(name = "pref_hitsound")
     private Boolean prefHitSound;
     @Column(name = "pref_hideteam")

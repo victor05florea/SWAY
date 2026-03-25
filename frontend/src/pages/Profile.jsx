@@ -144,63 +144,63 @@ export default function Profile() {
   };
 
   return (
-    <div className="relative pt-32 pb-20 px-4 md:px-8 max-w-7xl mx-auto space-y-8 animate-fade-in h-[100vh] overflow-y-auto custom-scrollbar">
+    // 1. Containerul părinte ocupă tot ecranul (w-full) și deține SCROLL-ul.
+    <div className="h-[100vh] w-full overflow-y-auto custom-scrollbar pb-20">
       
-      <button 
-        onClick={() => navigate(-1)} 
-        className="inline-flex items-center text-gray-500 hover:text-primary-dim font-headline uppercase tracking-widest text-sm transition-colors mb-4 border border-outline-variant/30 px-4 py-2 bg-surface-container-high hover:bg-white/5 cursor-pointer"
-      >
-         &larr; Go Back
-      </button>
+      {/* 2. Containerul copil ține tot conținutul limitat la mijloc (max-w-7xl) */}
+      <div className="relative pt-32 px-4 md:px-8 max-w-7xl mx-auto space-y-8 animate-fade-in">
+        
+        <button 
+          onClick={() => navigate(-1)} 
+          className="inline-flex items-center text-gray-500 hover:text-primary-dim font-headline uppercase tracking-widest text-sm transition-colors mb-4 border border-outline-variant/30 px-4 py-2 bg-surface-container-high hover:bg-white/5 cursor-pointer"
+        >
+          &larr; Go Back
+        </button>
 
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end border-b border-outline-variant/20 pb-8">
-        <div className="lg:col-span-8 flex flex-col md:flex-row items-center md:items-end space-y-6 md:space-y-0 md:space-x-8">
-          <div className="relative w-48 h-48 bg-surface-container-highest overflow-hidden border-2 border-primary-dim/20 shadow-[0_0_15px_rgba(233,0,54,0.15)] shrink-0">
-             <img src={player.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${player.name}&backgroundType=gradientLinear&backgroundColor=0e0e0e,ff003c`} alt="Avatar" className="w-full h-full object-cover" />
-          </div>
-          <div className="flex-1 text-center md:text-left space-y-2">
-            
-            {/* Numele și steagul micșorat și așezat estetic */}
-            <div className="flex items-center justify-center md:justify-start gap-3">
-               <span className="font-headline text-5xl md:text-7xl font-black tracking-tighter text-white uppercase leading-none">{player.name}</span>
-               {player.country && player.country.toLowerCase() !== 'un' && (
-                  <img 
-                    src={`https://community.fastly.steamstatic.com/public/images/countryflags/${player.country.toLowerCase()}.gif`} 
-                    alt={player.country} 
-                    className="w-6 h-auto rounded-[2px] shadow-sm mb-1 opacity-90"
-                  />
-               )}
+        {/* === AICI RĂMÂNE ABSOLUT TOT CONȚINUTUL TĂU VECHI (Secțiunile) === */}
+        {/* Adaugă secțiunile tale: Header (cu poza), Service Record, Mix Stats, etc. exact cum erau */}
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end border-b border-outline-variant/20 pb-8">
+          <div className="lg:col-span-8 flex flex-col md:flex-row items-center md:items-end space-y-6 md:space-y-0 md:space-x-8">
+            <div className="relative w-48 h-48 bg-surface-container-highest overflow-hidden border-2 border-primary-dim/20 shadow-[0_0_15px_rgba(233,0,54,0.15)] shrink-0">
+               <img src={player.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${player.name}&backgroundType=gradientLinear&backgroundColor=0e0e0e,ff003c`} alt="Avatar" className="w-full h-full object-cover" />
             </div>
-
-            <div className="flex flex-col gap-2 mt-4">
-              <span className="font-headline text-primary-dim tracking-[0.4em] text-sm md:text-base font-bold uppercase">
-                 Server Rank: #{player.serverRank || 'Unranked'}
-              </span>
-              
-              {/* MIX ELO ȘI RANK MIX AICI */}
-              <span className="font-headline text-gray-400 tracking-[0.2em] text-xs font-bold uppercase mb-2">
-                 Mix elo: <span className="text-white">{player.mixelo || player.mixElo || 0}</span> <span className="text-primary-dim">(#{player.mixRank || player.mixrank || 'Unranked'})</span>
-              </span>
-              
-              <div className="flex justify-center md:justify-start gap-2">
-                  {getRoles().map(role => (
-                      <span key={role.name} className={`text-[10px] px-2 py-0.5 border font-bold tracking-widest ${role.style}`}>
-                          {role.name}
-                      </span>
-                  ))}
+            <div className="flex-1 text-center md:text-left space-y-2">
+              <div className="flex items-center justify-center md:justify-start gap-3">
+                 <span className="font-headline text-5xl md:text-7xl font-black tracking-tighter text-white uppercase leading-none">{player.name}</span>
+                 {player.country && player.country.toLowerCase() !== 'un' && (
+                    <img 
+                      src={`https://community.fastly.steamstatic.com/public/images/countryflags/${player.country.toLowerCase()}.gif`} 
+                      alt={player.country} 
+                      className="w-6 h-auto rounded-[2px] shadow-sm mb-1 opacity-90"
+                    />
+                 )}
+              </div>
+              <div className="flex flex-col gap-2 mt-4">
+                <span className="font-headline text-primary-dim tracking-[0.4em] text-sm md:text-base font-bold uppercase">
+                   Server Rank: #{player.serverRank || 'Unranked'}
+                </span>
+                <span className="font-headline text-gray-400 tracking-[0.2em] text-xs font-bold uppercase mb-2">
+                   Mix elo: <span className="text-white">{player.mixelo || player.mixElo || 0}</span> <span className="text-primary-dim">(#{player.mixRank || player.mixrank || 'Unranked'})</span>
+                </span>
+                <div className="flex justify-center md:justify-start gap-2">
+                    {getRoles().map(role => (
+                        <span key={role.name} className={`text-[10px] px-2 py-0.5 border font-bold tracking-widest ${role.style}`}>
+                            {role.name}
+                        </span>
+                    ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <div className="lg:col-span-4 flex justify-center lg:justify-end">
-          <a href={steamLink} target="_blank" rel="noopener noreferrer" className="group relative px-8 py-4 bg-primary-dim text-white font-headline font-bold uppercase tracking-widest text-sm overflow-hidden transition-all duration-300 hover:shadow-[0_0_30px_rgba(233,0,54,0.4)]">
-            <span className="relative z-10 flex items-center space-x-3">
-              <FaSteam className="text-xl" />
-              <span>VIEW STEAM PROFILE</span>
-            </span>
-          </a>
-        </div>
-      </section>
+          <div className="lg:col-span-4 flex justify-center lg:justify-end">
+            <a href={steamLink} target="_blank" rel="noopener noreferrer" className="group relative px-8 py-4 bg-primary-dim text-white font-headline font-bold uppercase tracking-widest text-sm overflow-hidden transition-all duration-300 hover:shadow-[0_0_30px_rgba(233,0,54,0.4)]">
+              <span className="relative z-10 flex items-center space-x-3">
+                <FaSteam className="text-xl" />
+                <span>VIEW STEAM PROFILE</span>
+              </span>
+            </a>
+          </div>
+        </section>
 
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
         
@@ -389,6 +389,7 @@ export default function Profile() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

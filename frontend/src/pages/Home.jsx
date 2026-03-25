@@ -352,8 +352,7 @@ export default function Home() {
       <section className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-20 relative z-10">
         <div className="bg-surface-container-low/40 border border-white/10 p-10 rounded-xl flex flex-col justify-between min-h-[160px] hover:bg-primary-dim/5 transition-colors duration-700 group shadow-lg">
           <div className="flex justify-between items-center">
-             <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-gray-500 font-headline group-hover:text-primary-dim transition-colors">Neural Network Population</span>
-             <span className="material-symbols-outlined text-gray-500 group-hover:text-primary-dim transition-colors text-sm">groups</span>
+             <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-gray-500 font-headline group-hover:text-primary-dim transition-colors">Unique Players</span>
           </div>
           <div className="flex items-baseline gap-6 mt-4">
             <span className="text-7xl font-black font-headline text-white tracking-tighter">
@@ -368,8 +367,8 @@ export default function Home() {
           className="bg-surface-container-highest/20 backdrop-blur-md border border-white/5 p-10 rounded-xl flex flex-col justify-between min-h-[160px] hover:border-primary-dim/30 hover:bg-primary-dim/5 transition-all group cursor-pointer shadow-lg"
         >
           <div className="flex justify-between items-center">
-            <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-gray-500 font-headline group-hover:text-primary-dim transition-colors">Map Repository</span>
-            <span className="material-symbols-outlined text-gray-500 group-hover:text-primary-dim transition-colors text-sm">open_in_full</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-gray-500 font-headline group-hover:text-primary-dim transition-colors">Maps in Pool</span>
+            <span className="material-symbols-outlined text-gray-500 group-hover:text-primary-dim transition-colors text-sm">See All</span>
           </div>
           <span className="text-7xl font-black font-headline text-white tracking-tighter transition-transform duration-500 group-hover:scale-105 mt-4">
             {slideshowImages.length}

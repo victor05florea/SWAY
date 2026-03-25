@@ -1,16 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { FaSteam } from 'react-icons/fa';
 
 export default function Profile() {
   const { id } = useParams();
+  const navigate = useNavigate(); // Folosim navigate pentru butonul de "Go Back"
+  
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [jumpMode, setJumpMode] = useState("PRE");
 
+  // --- MAGIA PENTRU SCROLL ---
+  // Îngheață scroll-ul general când intrăm pe profil și îl deblochează când ieșim
   useEffect(() => {
-    // 1. Dacă din greșeală link-ul este gol sau stricat, ne oprim.
+    document.body.style.overflow = 'hidden';
+    
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
+  // ---------------------------
+
+  useEffect(() => {
     if (!id || id === "undefined") {
       setLoading(false);
       return;
@@ -18,14 +30,12 @@ export default function Profile() {
 
     fetch(`http://localhost:8080/api/players/${id}`)
       .then(res => {
-        // 2. Dacă Java ne spune că nu l-a găsit (Eroare 404 sau 500)
         if (!res.ok) {
           throw new Error("Jucătorul nu a fost găsit în baza de date.");
         }
         return res.json();
       })
       .then(data => {
-        // 3. Extra-protecție: Dacă Java ne trimite un JSON de eroare în loc de profil
         if (data.error || !data.name) {
           throw new Error("Date invalide primite de la server.");
         }
@@ -34,7 +44,7 @@ export default function Profile() {
       })
       .catch(err => {
         console.error("Eroare la încărcarea profilului:", err);
-        setPlayer(null); // Forțăm playerul să fie null ca să apară mesajul "Not Found"
+        setPlayer(null); 
         setLoading(false);
       });
   }, [id]);
@@ -49,21 +59,17 @@ export default function Profile() {
 
   const kdRatio = (player.kills / (player.deaths || 1)).toFixed(2);
 
-  // Funcție care transformă ID-ul din baza de date în link real de Steam
   const getSteamProfileUrl = () => {
     const rawId = player.steamid || player.steamId;
     if (!rawId) return `https://steamcommunity.com/search/users/#text=${player.name}`;
 
     try {
-      // Magia SteamID64: adunăm ID-ul scurt cu "numărul magic" de la Valve
-      const steam64Base = 76561197960265728n; // Folosim "n" la final pentru numere uriașe (BigInt)
+      const steam64Base = 76561197960265728n; 
 
-      // Dacă ID-ul este doar din cifre (ex: 371937544)
       if (/^\d+$/.test(rawId)) {
         const steamId64 = BigInt(rawId) + steam64Base;
         return `https://steamcommunity.com/profiles/${steamId64.toString()}`;
       } 
-      // Dacă ID-ul este format clasic (ex: STEAM_1:0:185968772)
       else if (rawId.startsWith("STEAM_")) {
         const parts = rawId.split(":");
         if (parts.length === 3) {
@@ -77,16 +83,13 @@ export default function Profile() {
       console.error("Eroare la calcularea SteamID64:", e);
     }
     
-    // Fallback: Dacă ceva nu merge, caută-l după nume
     return `https://steamcommunity.com/search/users/#text=${player.name}`;
   };
 
   const steamLink = getSteamProfileUrl();
 
-  // Funcție pentru puncte la numere (ex: 25.678)
   const formatNumber = (num) => num ? Number(num).toLocaleString('de-DE') : '0';
 
-  // Funcție Roluri (Discord Style)
   const getRoles = () => {
     let roles = [];
     if (player.admin && player.admin !== "0" && player.admin !== "") {
@@ -101,14 +104,12 @@ export default function Profile() {
     return roles;
   };
 
-  // Cele 3 Jump-uri principale
   const mainJumps = [
     { label: "Long Jump", dist: currentStats.longjump },
     { label: "Count Jump", dist: currentStats.countjump },
     { label: "Bhop", dist: currentStats.bhop }
   ];
 
-  // Toate Jump-urile pentru Modal
   const getAllJumps = (stats) => [
     { label: "Long Jump", dist: stats.longjump, str: stats.ljStrafes, sync: stats.ljSync },
     { label: "Count Jump", dist: stats.countjump, str: stats.cjStrafes, sync: stats.cjSync },
@@ -136,17 +137,20 @@ export default function Profile() {
   };
 
   return (
-    <div className="relative pt-32 pb-20 px-4 md:px-8 max-w-7xl mx-auto space-y-8 animate-fade-in">
+    // Am adăugat h-screen și overflow-y-auto aici pentru ca interiorul profilului să facă scroll, dar pagina din spate nu.
+    <div className="relative pt-32 pb-20 px-4 md:px-8 max-w-7xl mx-auto space-y-8 animate-fade-in h-[100vh] overflow-y-auto custom-scrollbar">
       
-      <Link to="/leaderboard" className="inline-flex items-center text-gray-500 hover:text-primary-dim font-headline uppercase tracking-widest text-sm transition-colors mb-4 border border-outline-variant/30 px-4 py-2 bg-surface-container-high hover:bg-white/5">
-         &larr; Return to Rankings
-      </Link>
+      {/* BUTON GO BACK CU NAVIGATE(-1) */}
+      <button 
+        onClick={() => navigate(-1)} 
+        className="inline-flex items-center text-gray-500 hover:text-primary-dim font-headline uppercase tracking-widest text-sm transition-colors mb-4 border border-outline-variant/30 px-4 py-2 bg-surface-container-high hover:bg-white/5 cursor-pointer"
+      >
+         &larr; Go Back
+      </button>
 
-      {/* HEADER: AVATAR COLORAT PERMANENT & SERVER RANK */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end border-b border-outline-variant/20 pb-8">
         <div className="lg:col-span-8 flex flex-col md:flex-row items-center md:items-end space-y-6 md:space-y-0 md:space-x-8">
           <div className="relative w-48 h-48 bg-surface-container-highest overflow-hidden border-2 border-primary-dim/20 shadow-[0_0_15px_rgba(233,0,54,0.15)]">
-             {/* Fără filtru grayscale, direct poza originală */}
              <img src={player.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${player.name}&backgroundType=gradientLinear&backgroundColor=0e0e0e,ff003c`} alt="Avatar" className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 text-center md:text-left space-y-2">
@@ -156,7 +160,6 @@ export default function Profile() {
                  Server Rank: #{player.serverRank || 'Unranked'}
               </span>
               
-              {/* ROLURILE DISCORD */}
               <div className="flex justify-center md:justify-start gap-2">
                   {getRoles().map(role => (
                       <span key={role.name} className={`text-[10px] px-2 py-0.5 border font-bold tracking-widest ${role.style}`}>
@@ -177,16 +180,13 @@ export default function Profile() {
         </div>
       </section>
 
-      {/* GRIDUL PRINCIPAL */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
         
-        {/* 1. SERVICE RECORD (FOND MĂRIT ȘI RE-ARANJAT PE 2 RÂNDURI) */}
         <div className="lg:col-span-2 bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 space-y-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
           <div className="flex items-center justify-between border-b border-outline-variant/10 pb-4">
             <h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Service Record</h3>
           </div>
           <div className="grid grid-cols-2 gap-y-6 gap-x-4">
-            {/* Rândul 1: Orele (Mărite) */}
             <div className="space-y-1">
               <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Total Time</p>
               <p className="font-headline text-4xl font-bold text-white">{(player.time / 3600).toFixed(1)} <span className="text-sm text-gray-500">HRS</span></p>
@@ -195,7 +195,6 @@ export default function Profile() {
               <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Last 7 Days</p>
               <p className="font-headline text-4xl font-bold text-primary-dim">{(player.weektime / 3600).toFixed(1)} <span className="text-sm text-gray-500">HRS</span></p>
             </div>
-            {/* Rândul 2: Ownages & Wreckers */}
             <div className="space-y-1">
               <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Ownages</p>
               <p className="font-headline text-3xl font-bold text-white">{formatNumber(player.ownages)}</p>
@@ -207,12 +206,10 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* 2. PERSONAL BESTS (MAI COMPACT, BUTON SEE ALL SUS) */}
         <div className="lg:col-span-2 bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 space-y-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
           <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-outline-variant/10 pb-4 gap-4 md:gap-0">
             <div className="flex items-center gap-4">
                 <h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Personal Bests</h3>
-                {/* BUTONUL SEE ALL (MUTAT AICI) */}
                 <button 
                   onClick={() => setIsModalOpen(true)} 
                   className="text-[9px] font-bold text-primary-dim hover:text-white transition-colors uppercase tracking-[0.2em] italic flex items-center gap-1 group"
@@ -238,7 +235,6 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* 3. COMBAT RECORD */}
         <div className="lg:col-span-2 bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 space-y-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
           <div className="flex items-center justify-between border-b border-outline-variant/10 pb-4">
             <h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Combat Record</h3>
@@ -259,7 +255,6 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* 4. KINETICS */}
         <div className="lg:col-span-2 bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 space-y-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
           <div className="flex items-center justify-between border-b border-outline-variant/10 pb-4">
             <h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Kinetics</h3>
@@ -288,7 +283,6 @@ export default function Profile() {
 
       </section>
 
-      {/* --- MODALUL DUAL --- */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={() => setIsModalOpen(false)}></div>
@@ -306,7 +300,6 @@ export default function Profile() {
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
                   
-                  {/* COLOANA PRE */}
                   <div className="bg-surface-container-low/30 border border-white/5 p-4">
                       <div className="text-center mb-4 pb-2 border-b border-primary-dim/30">
                           <span className="text-[11px] font-bold text-white uppercase tracking-[0.3em] bg-primary-dim/20 px-3 py-1 text-primary-dim">PRE Mode Records</span>
@@ -317,7 +310,6 @@ export default function Profile() {
                       </div>
                   </div>
 
-                  {/* COLOANA NOPRE */}
                   <div className="bg-surface-container-low/30 border border-white/5 p-4">
                       <div className="text-center mb-4 pb-2 border-b border-gray-500/30">
                           <span className="text-[11px] font-bold text-white uppercase tracking-[0.3em] bg-white/5 px-3 py-1 text-gray-400">NOPRE Mode Records</span>

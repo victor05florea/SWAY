@@ -4,23 +4,17 @@ import { FaSteam } from 'react-icons/fa';
 
 export default function Profile() {
   const { id } = useParams();
-  const navigate = useNavigate(); // Folosim navigate pentru butonul de "Go Back"
-  
+  const navigate = useNavigate();
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [jumpMode, setJumpMode] = useState("PRE");
 
-  // --- MAGIA PENTRU SCROLL ---
-  // Îngheață scroll-ul general când intrăm pe profil și îl deblochează când ieșim
+  // Înghețăm scroll-ul paginii principale (dar păstrăm scroll în interiorul profilului)
   useEffect(() => {
     document.body.style.overflow = 'hidden';
-    
-    return () => {
-      document.body.style.overflow = 'auto';
-    };
+    return () => { document.body.style.overflow = 'auto'; };
   }, []);
-  // ---------------------------
 
   useEffect(() => {
     if (!id || id === "undefined") {
@@ -30,15 +24,11 @@ export default function Profile() {
 
     fetch(`http://localhost:8080/api/players/${id}`)
       .then(res => {
-        if (!res.ok) {
-          throw new Error("Jucătorul nu a fost găsit în baza de date.");
-        }
+        if (!res.ok) throw new Error("Jucătorul nu a fost găsit în baza de date.");
         return res.json();
       })
       .then(data => {
-        if (data.error || !data.name) {
-          throw new Error("Date invalide primite de la server.");
-        }
+        if (data.error || !data.name) throw new Error("Date invalide primite de la server.");
         setPlayer(data);
         setLoading(false);
       })
@@ -50,7 +40,6 @@ export default function Profile() {
   }, [id]);
 
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center font-headline text-primary-dim text-2xl animate-pulse tracking-widest uppercase">Establishing secure connection...</div>;
-  
   if (!player) return <div className="min-h-screen bg-background flex items-center justify-center text-gray-500 font-headline text-2xl tracking-widest uppercase">Operator Identity Not Found in Database.</div>;
  
   const preStats = player.jumpStatsPre || {};
@@ -62,15 +51,12 @@ export default function Profile() {
   const getSteamProfileUrl = () => {
     const rawId = player.steamid || player.steamId;
     if (!rawId) return `https://steamcommunity.com/search/users/#text=${player.name}`;
-
     try {
       const steam64Base = 76561197960265728n; 
-
       if (/^\d+$/.test(rawId)) {
         const steamId64 = BigInt(rawId) + steam64Base;
         return `https://steamcommunity.com/profiles/${steamId64.toString()}`;
-      } 
-      else if (rawId.startsWith("STEAM_")) {
+      } else if (rawId.startsWith("STEAM_")) {
         const parts = rawId.split(":");
         if (parts.length === 3) {
           const y = BigInt(parts[1]);
@@ -82,12 +68,10 @@ export default function Profile() {
     } catch (e) {
       console.error("Eroare la calcularea SteamID64:", e);
     }
-    
     return `https://steamcommunity.com/search/users/#text=${player.name}`;
   };
 
   const steamLink = getSteamProfileUrl();
-
   const formatNumber = (num) => num ? Number(num).toLocaleString('de-DE') : '0';
 
   const getRoles = () => {
@@ -110,26 +94,49 @@ export default function Profile() {
     { label: "Bhop", dist: currentStats.bhop }
   ];
 
+  // Maparea noilor variabile pentru Modal
   const getAllJumps = (stats) => [
-    { label: "Long Jump", dist: stats.longjump, str: stats.ljStrafes, sync: stats.ljSync },
-    { label: "Count Jump", dist: stats.countjump, str: stats.cjStrafes, sync: stats.cjSync },
-    { label: "Bhop", dist: stats.bhop, str: stats.bjStrafes, sync: stats.bjSync },
-    { label: "Multi Bhop", dist: stats.mbjRecord, str: stats.mbjStrafes, sync: stats.mbjSync },
-    { label: "Weird Jump", dist: stats.wjRecord, str: stats.wjStrafes, sync: stats.wjSync },
-    { label: "Ladder Jump", dist: stats.lajRecord, str: stats.lajStrafes, sync: stats.lajSync },
-    { label: "Drop Standup", dist: stats.dsbjRecord, str: stats.dsbjStrafes, sync: stats.dsbjSync },
-    { label: "Ladder Bhop", dist: stats.lbrRecord, str: stats.lbrStrafes, sync: stats.lbrSync },
+    { label: "Long Jump", dist: stats.longjump, max: stats.ljMax, height: stats.ljHeight, pre: stats.ljPre, str: stats.ljStrafes, sync: stats.ljSync },
+    { label: "Count Jump", dist: stats.countjump, max: stats.cjMax, height: stats.cjHeight, pre: stats.cjPre, str: stats.cjStrafes, sync: stats.cjSync },
+    { label: "Bhop", dist: stats.bhop, max: stats.bjMax, height: stats.bjHeight, pre: stats.bjPre, str: stats.bjStrafes, sync: stats.bjSync },
+    { label: "Multi Bhop", dist: stats.mbjRecord, max: stats.mbjMax, height: stats.mbjHeight, pre: stats.mbjPre, str: stats.mbjStrafes, sync: stats.mbjSync },
+    { label: "Weird Jump", dist: stats.wjRecord, max: stats.wjMax, height: stats.wjHeight, pre: stats.wjPre, str: stats.wjStrafes, sync: stats.wjSync },
+    { label: "Ladder Jump", dist: stats.lajRecord, max: stats.lajMax, height: stats.lajHeight, pre: stats.lajPre, str: stats.lajStrafes, sync: stats.lajSync },
+    { label: "Drop Standup", dist: stats.dsbjRecord, max: stats.dsbjMax, height: stats.dsbjHeight, pre: stats.dsbjPre, str: stats.dsbjStrafes, sync: stats.dsbjSync },
+    { label: "Ladder Bhop", dist: stats.lbrRecord, max: stats.lbrMax, height: stats.lbrHeight, pre: stats.lbrPre, str: stats.lbrStrafes, sync: stats.lbrSync },
   ];
 
   const renderModalStat = (j) => {
     if (!j.dist || parseFloat(j.dist) <= 0) return null;
     return (
-      <div key={j.label} className="flex justify-between items-end border-b border-white/5 pb-2 hover:bg-white/[0.02] transition-colors p-2">
-        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{j.label}</span>
-        <div className="text-right">
-          <div className="font-headline font-black text-lg text-white leading-none">{parseFloat(j.dist).toFixed(2)}</div>
-          <div className="text-[9px] text-gray-500 mt-1 uppercase tracking-widest">
-            {j.str || 0} Str <span className="text-primary-dim mx-1">//</span> {parseFloat(j.sync || 0).toFixed(0)}% Sync
+      <div key={j.label} className="flex flex-col border border-white/5 rounded-lg mb-3 bg-black/20 hover:bg-white/[0.03] transition-colors p-3.5 gap-3 shadow-inner">
+        <div className="flex justify-between items-end border-b border-white/5 pb-2">
+          {/* FONT MĂRIT ȘI CULOARE GRI DESCHIS PENTRU TITLU */}
+          <span className="text-sm font-bold text-gray-300 uppercase tracking-widest drop-shadow-sm">{j.label}</span>
+          <span className="font-headline font-black text-2xl text-white leading-none drop-shadow-md">{parseFloat(j.dist).toFixed(2)}</span>
+        </div>
+        
+        {/* STATISTICI STRICT ÎN ORDINEA CERUTĂ, FONT MAI MARE ȘI LIZIBIL */}
+        <div className="grid grid-cols-5 text-center divide-x divide-white/10 text-xs font-bold uppercase tracking-widest text-gray-300">
+          <div className="flex flex-col gap-1 px-1">
+             <span className="text-[9px] text-gray-500">Max</span>
+             <span className="text-white">{parseFloat(j.max || 0).toFixed(0)}</span>
+          </div>
+          <div className="flex flex-col gap-1 px-1">
+             <span className="text-[9px] text-gray-500">Height</span>
+             <span className="text-white">{parseFloat(j.height || 0).toFixed(2)}</span>
+          </div>
+          <div className="flex flex-col gap-1 px-1">
+             <span className="text-[9px] text-gray-500">Pre</span>
+             <span className="text-white">{parseFloat(j.pre || 0).toFixed(2)}</span>
+          </div>
+          <div className="flex flex-col gap-1 px-1">
+             <span className="text-[9px] text-gray-500">Strafes</span>
+             <span className="text-white">{j.str || 0}</span>
+          </div>
+          <div className="flex flex-col gap-1 px-1">
+             <span className="text-[9px] text-primary-dim">Sync</span>
+             <span className="text-primary-dim">{parseFloat(j.sync || 0).toFixed(0)}%</span>
           </div>
         </div>
       </div>
@@ -137,10 +144,8 @@ export default function Profile() {
   };
 
   return (
-    // Am adăugat h-screen și overflow-y-auto aici pentru ca interiorul profilului să facă scroll, dar pagina din spate nu.
     <div className="relative pt-32 pb-20 px-4 md:px-8 max-w-7xl mx-auto space-y-8 animate-fade-in h-[100vh] overflow-y-auto custom-scrollbar">
       
-      {/* BUTON GO BACK CU NAVIGATE(-1) */}
       <button 
         onClick={() => navigate(-1)} 
         className="inline-flex items-center text-gray-500 hover:text-primary-dim font-headline uppercase tracking-widest text-sm transition-colors mb-4 border border-outline-variant/30 px-4 py-2 bg-surface-container-high hover:bg-white/5 cursor-pointer"
@@ -150,14 +155,31 @@ export default function Profile() {
 
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end border-b border-outline-variant/20 pb-8">
         <div className="lg:col-span-8 flex flex-col md:flex-row items-center md:items-end space-y-6 md:space-y-0 md:space-x-8">
-          <div className="relative w-48 h-48 bg-surface-container-highest overflow-hidden border-2 border-primary-dim/20 shadow-[0_0_15px_rgba(233,0,54,0.15)]">
+          <div className="relative w-48 h-48 bg-surface-container-highest overflow-hidden border-2 border-primary-dim/20 shadow-[0_0_15px_rgba(233,0,54,0.15)] shrink-0">
              <img src={player.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${player.name}&backgroundType=gradientLinear&backgroundColor=0e0e0e,ff003c`} alt="Avatar" className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 text-center md:text-left space-y-2">
-            <span className="font-headline text-5xl md:text-7xl font-black tracking-tighter text-white uppercase leading-none">{player.name}</span>
-            <div className="flex flex-col gap-2 mt-2">
+            
+            {/* Numele și steagul micșorat și așezat estetic */}
+            <div className="flex items-center justify-center md:justify-start gap-3">
+               <span className="font-headline text-5xl md:text-7xl font-black tracking-tighter text-white uppercase leading-none">{player.name}</span>
+               {player.country && player.country.toLowerCase() !== 'un' && (
+                  <img 
+                    src={`https://community.fastly.steamstatic.com/public/images/countryflags/${player.country.toLowerCase()}.gif`} 
+                    alt={player.country} 
+                    className="w-6 h-auto rounded-[2px] shadow-sm mb-1 opacity-90"
+                  />
+               )}
+            </div>
+
+            <div className="flex flex-col gap-2 mt-4">
               <span className="font-headline text-primary-dim tracking-[0.4em] text-sm md:text-base font-bold uppercase">
                  Server Rank: #{player.serverRank || 'Unranked'}
+              </span>
+              
+              {/* MIX ELO ȘI RANK MIX AICI */}
+              <span className="font-headline text-gray-400 tracking-[0.2em] text-xs font-bold uppercase mb-2">
+                 Mix elo: <span className="text-white">{player.mixelo || player.mixElo || 0}</span> <span className="text-primary-dim">(#{player.mixRank || player.mixrank || 'Unranked'})</span>
               </span>
               
               <div className="flex justify-center md:justify-start gap-2">
@@ -188,7 +210,7 @@ export default function Profile() {
           </div>
           <div className="grid grid-cols-2 gap-y-6 gap-x-4">
             <div className="space-y-1">
-              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Total Time</p>
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Time Alive</p>
               <p className="font-headline text-4xl font-bold text-white">{(player.time / 3600).toFixed(1)} <span className="text-sm text-gray-500">HRS</span></p>
             </div>
             <div className="space-y-1">
@@ -281,28 +303,68 @@ export default function Profile() {
           </div>
         </div>
 
+        {/* --- DIV NOU PENTRU STATISTICI DE MIX (Gamemode) --- */}
+        <div className="col-span-full bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] mb-10 mt-2">
+          <div className="flex items-center justify-between border-b border-outline-variant/10 pb-4 mb-6">
+            <h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-primary-dim">Mix Competitive Stats</h3>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-6 text-center">
+            <div className="space-y-1">
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Mix Games</p>
+              <p className="font-headline text-3xl font-bold text-white">{formatNumber(player.mixgames || player.mixGames)}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Mix Won</p>
+              <p className="font-headline text-3xl font-bold text-emerald-400">{formatNumber(player.mixwon || player.mixWon)}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Time Alive</p>
+              <p className="font-headline text-3xl font-bold text-white">{((player.mixtotaltime || player.mixTotalTime || 0) / 3600).toFixed(1)} <span className="text-[10px] text-gray-500 uppercase tracking-widest">HRS</span></p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Total Stabs</p>
+              <p className="font-headline text-3xl font-bold text-white">{formatNumber(player.mixtotalstabs || player.mixTotalStabs)}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Disconnects</p>
+              <p className="font-headline text-3xl font-bold text-red-500">{formatNumber(player.mixdisconnects || player.mixDisconnects)}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Fall Damage</p>
+              <p className="font-headline text-3xl font-bold text-gray-400">{formatNumber(player.mixtotalfalldmg || player.mixTotalFallDmg)}</p>
+            </div>
+            <div className="space-y-1 bg-black/20 rounded-xl p-2 border border-white/5 flex flex-col justify-center shadow-inner">
+              <p className="text-primary-dim text-[10px] font-bold uppercase tracking-wider drop-shadow-sm">Mix Elo</p>
+              <p className="font-headline text-4xl font-bold text-primary-dim drop-shadow-md">{formatNumber(player.mixelo || player.mixElo)}</p>
+            </div>
+          </div>
+        </div>
+
       </section>
 
+      {/* --- MODALUL DUAL --- */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={() => setIsModalOpen(false)}></div>
           
-          <div className="relative bg-surface-container-highest border border-white/10 w-full max-w-5xl p-8 max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+          <div className="relative bg-surface-container-highest border border-white/10 w-full max-w-6xl p-8 max-h-[90vh] overflow-hidden flex flex-col shadow-2xl rounded-xl">
             
             <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4 shrink-0">
               <div>
-                 <h2 className="font-headline text-2xl md:text-3xl font-black text-white uppercase tracking-tighter leading-none">Complete Jump Database</h2>
+                 <h2 className="font-headline text-2xl md:text-3xl font-black text-white uppercase tracking-tighter leading-none drop-shadow-lg">Complete Jump Database</h2>
                  <p className="text-[10px] text-primary-dim uppercase tracking-[0.2em] mt-2">Name: {player.name}</p>
               </div>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest border border-white/10 px-4 py-2 hover:bg-white/5">Close</button>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest border border-white/10 px-4 py-2 hover:bg-white/5 rounded-md">Close</button>
             </div>
             
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
                   
-                  <div className="bg-surface-container-low/30 border border-white/5 p-4">
-                      <div className="text-center mb-4 pb-2 border-b border-primary-dim/30">
-                          <span className="text-[11px] font-bold text-white uppercase tracking-[0.3em] bg-primary-dim/20 px-3 py-1 text-primary-dim">PRE Mode Records</span>
+                  {/* COLOANA PRE */}
+                  <div className="bg-surface-container-low/30 border border-white/5 p-5 rounded-lg">
+                      <div className="text-center mb-6 pb-3 border-b border-primary-dim/30">
+                          <span className="text-xs font-bold text-white uppercase tracking-[0.3em] bg-primary-dim/20 px-4 py-1.5 rounded-sm text-primary-dim shadow-inner">PRE Mode Records</span>
                       </div>
                       <div className="space-y-1">
                           {getAllJumps(preStats).map(j => renderModalStat(j))}
@@ -310,9 +372,10 @@ export default function Profile() {
                       </div>
                   </div>
 
-                  <div className="bg-surface-container-low/30 border border-white/5 p-4">
-                      <div className="text-center mb-4 pb-2 border-b border-gray-500/30">
-                          <span className="text-[11px] font-bold text-white uppercase tracking-[0.3em] bg-white/5 px-3 py-1 text-gray-400">NOPRE Mode Records</span>
+                  {/* COLOANA NOPRE */}
+                  <div className="bg-surface-container-low/30 border border-white/5 p-5 rounded-lg">
+                      <div className="text-center mb-6 pb-3 border-b border-gray-500/30">
+                          <span className="text-xs font-bold text-white uppercase tracking-[0.3em] bg-white/10 px-4 py-1.5 rounded-sm text-gray-300 shadow-inner">NOPRE Mode Records</span>
                       </div>
                       <div className="space-y-1">
                           {getAllJumps(noPreStats).map(j => renderModalStat(j))}

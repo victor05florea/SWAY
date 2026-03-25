@@ -6,6 +6,7 @@ export default function Home() {
   const [servers, setServers] = useState([]);
   const [potw, setPotw] = useState(null);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [copiedServer, setCopiedServer] = useState(null);
 
   const slideshowImages = [
     "fj_mansion.png", "hns_avenue.jpg", "hns_backalot.jpg", "hns_devblocks_remake.jpg", "hns_freeway.jpg", "hns_mini_bbcity.jpg", "hns_mini_floppy.jpg", "hns_mini_jukecity.jpg", "hns_mini_rooftops.jpg", "hns_rooftops_remake.jpg", "hns_mini_tyo.jpg", "hns_trickpark.jpg", "hns_boost_bbcity.jpg", "hns_skyline.jpg", "hns_boost_dust2.jpg", "hns_boost_qube.jpg", "hns_boost_mafia.jpg", "hns_boost_jukecity.jpg", "hns_oilrig.jpg", "hns_miami.jpg", "hns_half.jpg", "hns_sunset.jpg", "hns_rooftops.jpg", "hns_rooftops_v5.jpg", "hns_virtual.jpg", "hns_iceskating.jpg", "hns_jhard.jpg", "hns_zen.jpg", "hns_ruins.jpg", "hns_liberation.jpg", "hns_kitty_pro.jpg", "hns_funk.jpg", "hns_flowtown.jpg", "hns_floppytown.jpg", "hns_esip.jpg", "hns_brickworld.jpg", "hns_bakgard.jpg", "hns_assault_inside.jpg", "hns_jukecity.jpg", "hns_devblocks.jpg", "hns_tyo.jpg", "hns_bbcity.jpg"
@@ -40,13 +41,18 @@ export default function Home() {
       boost: { title: "Boost / Teamplay", maps: [] },
       mini: { title: "Mini Maps (1v1 / 2v2)", maps: [] },
       fj: { title: "Funjump", maps: [] },
+      holiday: { title: "Holiday Maps", maps: [] },
       classic: { title: "Classic Hide'N'Seek", maps: [] }
     };
 
     maps.forEach(map => {
-      if (map.includes('boost')) categories.boost.maps.push(map);
-      else if (map.includes('mini')) categories.mini.maps.push(map);
-      else if (map.includes('fj_')) categories.fj.maps.push(map);
+      const mapLower = map.toLowerCase();
+      if (mapLower.includes('iceskating') || mapLower.includes('xmas') || mapLower.includes('snow')) {
+        categories.holiday.maps.push(map);
+      }
+      else if (mapLower.includes('boost')) categories.boost.maps.push(map);
+      else if (mapLower.includes('mini')) categories.mini.maps.push(map);
+      else if (mapLower.includes('fj_')) categories.fj.maps.push(map);
       else categories.classic.maps.push(map);
     });
 
@@ -56,11 +62,20 @@ export default function Home() {
   const mapCategories = categorizeMaps(slideshowImages);
 
   const getServerData = (id) => {
-    return servers.find(s => s.server === id) || { name: "Loading...", map: "---", players: "0", maxplayers: "32", terrorists: "", counterterrorists: "", spectators: "", funjumpers: "" };
+    // Fallback-ul in caz ca serverul e oprit sau inca se incarca
+    return servers.find(s => s.server === id) || { 
+      name: "Loading...", map: "---", players: "0", maxplayers: "32", 
+      terrorists: "", counterterrorists: "", spectators: "", funjumpers: "",
+      serverip: "Loading..." // Backend-ul trimite variabila 'serverip'
+    };
   };
 
-  const copyToClipboard = (ip) => {
-    navigator.clipboard.writeText(ip);
+  const copyToClipboard = (ip, serverId) => {
+    if(!ip || ip === "Loading...") return; // Prevenim copierea textului 'Loading...'
+    navigator.clipboard.writeText(ip).then(() => {
+      setCopiedServer(serverId);
+      setTimeout(() => setCopiedServer(null), 2000); 
+    });
   };
 
   const formatTime = (seconds) => {
@@ -84,9 +99,7 @@ export default function Home() {
       });
   };
 
-  // Helper pentru a randa badge-ul cu rolul jucătorului
   const getRoleBadge = (player) => {
-    // Verificăm variabilele în care ar putea veni rolul (ajustează dacă backend-ul trimite sub alt nume)
     const roleStr = (player.role || player.status || player.rankName || "").toLowerCase();
     
     if (roleStr.includes('developer') || roleStr.includes('dev')) {
@@ -131,7 +144,7 @@ export default function Home() {
             </span>
           </div>
         )) : (
-          <span className="text-[10px] text-zinc-600 italic">Empty</span>
+          <span className="text-[10px] text-zinc-600 italic">No players</span>
         )}
       </div>
     </div>
@@ -182,7 +195,6 @@ export default function Home() {
         ))}
       </div>
 
-      {/* --- HERO SECTION REAJUSTAT MAI SUS (pt-10 în loc de pt-20) --- */}
       <section className="mb-14 pt-10 flex flex-col items-center relative z-10 text-center">
         <div className="flex font-headline font-black tracking-tighter leading-none select-none gap-4 md:gap-6 group justify-center">
           {['S', 'W', 'A', 'Y'].map((letter, idx) => {
@@ -192,7 +204,6 @@ export default function Home() {
                 <span className="text-8xl md:text-[9rem] text-primary-dim text-center transition-all duration-500 group-hover:text-white group-hover:drop-shadow-[0_0_15px_rgba(233,0,54,0.4)] leading-none">
                   {letter}
                 </span>
-                {/* Pad-ing redus drastic (mt-1) pentru ca acronimul sa fie fix sub litera */}
                 <span className="text-[9px] md:text-[11px] tracking-[0.4em] text-primary-dim/60 uppercase font-bold mt-1 transition-colors duration-300 group-hover:text-white/80 ml-1">
                   {words[idx]}
                 </span>
@@ -201,7 +212,6 @@ export default function Home() {
           })}
         </div>
 
-        {/* Text scurtat și minimalist */}
         <div className="mt-12 relative group max-w-2xl mx-auto flex flex-col items-center">
           <p className="text-gray-300 font-headline font-medium text-xl leading-relaxed tracking-wide italic">
             "We are like a bunker! We got everything you need."
@@ -210,23 +220,22 @@ export default function Home() {
         </div>
       </section>
 
-      {/* --- PLAYER OF THE WEEK --- */}
       {potw && (() => {
         const potwFlag = (potw.country || potw.flag || 'un').toLowerCase();
         return (
           <section className="mb-14 relative z-10 flex justify-center">
             <div className="bg-gradient-to-r from-surface-container-low/20 via-primary-dim/10 to-surface-container-low/20 border border-primary-dim/20 backdrop-blur-md rounded-2xl px-6 md:px-8 py-5 flex flex-col md:flex-row items-center gap-6 shadow-[0_0_30px_rgba(233,0,54,0.05)] hover:shadow-[0_0_30px_rgba(233,0,54,0.15)] transition-all duration-500">
               <div className="flex items-center gap-5">
-                <div className="relative group/avatar">
+                <Link to={`/profile/${potw.steamId || potw.steamid || potw.id}`} className="relative group/avatar cursor-pointer block">
                   <img 
                     src={potw.avatarUrl || potw.avatarurl || "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"} 
                     alt={potw.name}
                     className="w-14 h-14 md:w-16 md:h-16 rounded-xl object-cover border-2 border-primary-dim/30 shadow-[0_0_15px_rgba(233,0,54,0.2)] transition-transform duration-300 group-hover/avatar:scale-105 group-hover/avatar:border-primary-dim"
                     onError={(e) => { e.target.src = "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg" }}
                   />
-                </div>
+                </Link>
                 <div className="flex flex-col text-left justify-center">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-1">Player of the Week</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400 mb-1">Player of the Week</span>
                   <div className="flex items-center gap-2.5">
                     {potwFlag !== 'un' && (
                       <img 
@@ -240,7 +249,6 @@ export default function Home() {
                       {potw.name}
                     </Link>
                   </div>
-                  {/* Container pt BADGE ADMIN/VIP */}
                   <div className="mt-2">
                     {getRoleBadge(potw)}
                   </div>
@@ -253,7 +261,7 @@ export default function Home() {
                   <span className="text-lg font-bold text-white font-mono drop-shadow-sm">{formatTime(potw.weektime)}</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[9px] uppercase tracking-widest text-zinc-500">Global Rank</span>
+                  <span className="text-[9px] uppercase tracking-widest text-zinc-500">Rank</span>
                   <span className="text-lg font-bold text-emerald-400 font-mono drop-shadow-sm">#{potw.serverRank || potw.rank || "1"}</span>
                 </div>
               </div>
@@ -266,13 +274,16 @@ export default function Home() {
         {[1, 2, 3].map((sId) => {
           const sData = getServerData(sId);
           const percentage = (parseInt(sData.players) / (parseInt(sData.maxplayers) || 32)) * 100;
-          const ip = sId === 1 ? 'hns.sway.ro:27015' : sId === 2 ? 'nopre.sway.ro:27015' : 'mix.sway.ro:27015';
+          
+          // PRELUARE VARIABILE DIRECT DIN DATABASE PENTRU IP ȘI MAP
+          const serverIP = sData.serverip || "Loading...";
+          const currentMap = sData.map || "---";
 
           const terrorists = parsePlayerList(sData.terrorists);
           const counterTerrorists = parsePlayerList(sData.counterterrorists);
           const spectators = parsePlayerList(sData.spectators);
           const funjumpers = parsePlayerList(sData.funjumpers);
-          const mapImageUrl = `/images/${sData.map}.jpg`; 
+          const mapImageUrl = `/images/${currentMap}.jpg`; 
 
           return (
             <div key={sId} className="group relative bg-surface-container-low border border-white/5 rounded-2xl overflow-hidden transition-all duration-500 hover:border-primary-dim/20 hover:shadow-[0_0_40px_rgba(233,0,54,0.1)] hover:-translate-y-1.5 flex flex-col">
@@ -280,7 +291,7 @@ export default function Home() {
               <div className="relative aspect-[16/10] overflow-hidden border-b border-white/5">
                 <img 
                   src={mapImageUrl} 
-                  alt={`Map: ${sData.map}`}
+                  alt={`Map: ${currentMap}`}
                   className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                   onError={(e) => {
                     e.target.onerror = null; 
@@ -294,7 +305,7 @@ export default function Home() {
                   <div>
                     <h3 className="font-headline text-2xl font-black text-white tracking-tight uppercase group-hover:tracking-wider transition-all duration-500 drop-shadow-lg">{sData.name}</h3>
                     <span className="text-[11px] font-mono text-white/90 bg-black/40 px-2 py-0.5 rounded backdrop-blur-sm border border-white/5 inline-block mt-1">
-                      Map: {sData.map}
+                      Map: {currentMap}
                     </span>
                   </div>
                   <span className="text-[10px] font-bold text-emerald-400 tracking-widest animate-pulse bg-black/50 px-2 py-1 rounded backdrop-blur-sm">ONLINE</span>
@@ -306,7 +317,7 @@ export default function Home() {
                 <div className="flex flex-col gap-4">
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 group-hover:text-primary-dim transition-colors">
-                      {sId === 3 ? 'Competitive Hub' : 'Public System'}
+                      {sId === 3 ? 'Players' : 'Players'}
                     </span>
                     <div className="text-right flex flex-col items-end">
                       <span className="text-3xl font-black font-headline text-white drop-shadow-md">{sData.players}<span className="text-zinc-600">/{sData.maxplayers}</span></span>
@@ -316,16 +327,21 @@ export default function Home() {
                     </div>
                   </div>
                   
-                  <div 
-                    onClick={() => copyToClipboard(ip)}
-                    className="bg-black/40 p-3.5 rounded-lg flex items-center justify-between border border-white/5 hover:border-primary-dim/30 hover:bg-black/70 transition-all cursor-pointer group/btn"
-                    title="Click to copy server IP"
-                  >
-                    <code className="text-[11px] font-mono text-gray-400 group-hover/btn:text-white transition-colors">{ip}</code>
-                    <span className="text-[9px] font-bold text-primary-dim uppercase tracking-[0.2em] border border-primary-dim/20 px-2 py-1 rounded">Copy</span>
-                  </div>
+<div 
+  onClick={() => copyToClipboard(serverIP, sId)}
+  className="bg-black/40 p-4 rounded-lg flex items-center justify-between border border-white/5 hover:border-primary-dim/30 hover:bg-black/70 transition-all cursor-pointer group/btn"
+  title="Click to copy server IP"
+>
+  <code className="text-[14px] md:text-[13px] font-mono font-bold text-gray-300 group-hover/btn:text-white transition-colors tracking-widest">
+    {serverIP}
+  </code>
+  
+  <span className={`text-[9px] font-bold uppercase tracking-[0.2em] border px-2 py-1 rounded transition-colors ${copiedServer === sId ? 'text-emerald-400 border-emerald-400/20 bg-emerald-400/10' : 'text-primary-dim border-primary-dim/20 bg-primary-dim/5'}`}>
+    {copiedServer === sId ? 'Copied!' : 'Copy'}
+  </span>
+</div>
 
-                  <a href={`steam://connect/${ip}`} className="w-full block text-center bg-primary-dim hover:bg-white hover:text-black text-white py-3.5 rounded-lg font-black uppercase tracking-widest text-xs transition-all duration-300 shadow-lg shadow-primary-dim/10 hover:shadow-white/5">
+                  <a href={`steam://connect/${serverIP}`} className="w-full block text-center bg-primary-dim hover:bg-white hover:text-black text-white py-3.5 rounded-lg font-black uppercase tracking-widest text-xs transition-all duration-300 shadow-lg shadow-primary-dim/10 hover:shadow-white/5">
                     Connect Now
                   </a>
                 </div>
@@ -348,27 +364,25 @@ export default function Home() {
         })}
       </section>
 
-      {/* --- STATS BENTO (Acum e împărțit frumos în DOAR 2 coloane) --- */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-20 relative z-10">
-        <div className="bg-surface-container-low/40 border border-white/10 p-10 rounded-xl flex flex-col justify-between min-h-[160px] hover:bg-primary-dim/5 transition-colors duration-700 group shadow-lg">
+        <Link to="/leaderboard" className="bg-surface-container-low/40 border border-white/10 p-10 rounded-xl flex flex-col justify-between min-h-[160px] hover:border-primary-dim/30 hover:bg-primary-dim/5 transition-all duration-700 group shadow-lg cursor-pointer">
           <div className="flex justify-between items-center">
              <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-gray-500 font-headline group-hover:text-primary-dim transition-colors">Unique Players</span>
           </div>
           <div className="flex items-baseline gap-6 mt-4">
-            <span className="text-7xl font-black font-headline text-white tracking-tighter">
+            <span className="text-7xl font-black font-headline text-white tracking-tighter transition-transform duration-500 group-hover:scale-105">
               {totalPlayers.toLocaleString()}
             </span>
           </div>
-        </div>
+        </Link>
         
-        {/* Buton reparat (onClick pus corect direct pe wrapper-ul principal) */}
         <div 
           onClick={() => setIsMapModalOpen(true)} 
           className="bg-surface-container-highest/20 backdrop-blur-md border border-white/5 p-10 rounded-xl flex flex-col justify-between min-h-[160px] hover:border-primary-dim/30 hover:bg-primary-dim/5 transition-all group cursor-pointer shadow-lg"
         >
           <div className="flex justify-between items-center">
             <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-gray-500 font-headline group-hover:text-primary-dim transition-colors">Maps in Pool</span>
-            <span className="material-symbols-outlined text-gray-500 group-hover:text-primary-dim transition-colors text-sm">See All</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 group-hover:text-primary-dim transition-colors">See All &rarr;</span>
           </div>
           <span className="text-7xl font-black font-headline text-white tracking-tighter transition-transform duration-500 group-hover:scale-105 mt-4">
             {slideshowImages.length}
@@ -376,7 +390,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* --- MODALUL (POPUP-UL) PENTRU MAP POOL --- */}
       {isMapModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 lg:p-10 animate-fade-in">
           <div 
@@ -389,15 +402,14 @@ export default function Home() {
             <div className="px-8 py-6 border-b border-white/10 flex justify-between items-center bg-surface-container-low/80 backdrop-blur-md sticky top-0 z-20">
               <div>
                 <h2 className="text-3xl font-black font-headline text-white uppercase tracking-tighter">Map <span className="text-primary-dim">Pool</span></h2>
-                <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500">Official SWAY Network Maps</span>
               </div>
-              {/* Buton de Close reparat cu design-ul potrivit platformei */}
-              <button 
-                onClick={() => setIsMapModalOpen(false)} 
-                className="w-10 h-10 flex items-center justify-center bg-black/40 border border-white/10 hover:border-primary-dim/50 hover:bg-black/80 text-gray-400 hover:text-white rounded-lg transition-all"
-              >
-                <span className="material-symbols-outlined text-xl">close</span>
-              </button>
+              {/* CLOSE BUTTON (Identic cu cel din Profile) */}
+<button 
+  onClick={() => setIsMapModalOpen(false)} 
+  className="text-gray-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest border border-white/10 px-4 py-2 hover:bg-white/5 rounded-md cursor-pointer"
+>
+  Close
+</button>
             </div>
 
             <div className="p-8 overflow-y-auto custom-scrollbar flex-grow bg-gradient-to-b from-transparent to-black/40 space-y-12">
@@ -409,7 +421,7 @@ export default function Home() {
                 return (
                   <div key={categoryKey} className="relative">
                     <div className="flex items-center gap-4 mb-6">
-                      <h3 className="text-xl font-black font-headline uppercase tracking-widest text-white drop-shadow-md">
+                      <h3 className={`text-xl font-black font-headline uppercase tracking-widest drop-shadow-md ${categoryKey === 'holiday' ? 'text-blue-300' : 'text-white'}`}>
                         {category.title}
                       </h3>
                       <div className="h-px bg-white/10 flex-grow"></div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom'; // Am adăugat Link pentru navigarea internă
+import { Link } from 'react-router-dom';
 
 export default function Bans() {
   const [cheaters, setCheaters] = useState([]);
@@ -31,13 +31,11 @@ export default function Bans() {
 
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center font-headline text-primary-dim text-2xl animate-pulse tracking-widest uppercase">Loading Database Records...</div>;
 
-  // 1. Căutare
   let processedData = cheaters.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     (c.steamid && c.steamid.toString().includes(searchTerm))
   );
 
-  // 2. Filtrare
   if (filterReason !== "ALL") {
     processedData = processedData.filter(c => {
       if (filterReason === "BHOP") return c.bhophack > 0;
@@ -49,12 +47,10 @@ export default function Bans() {
     });
   }
 
-  // 3. Sortare
   processedData = [...processedData].sort((a, b) => {
     return sortOrder === "NEWEST" ? b.id - a.id : a.id - b.id;
   });
 
-  // 4. Paginare
   const totalPages = Math.ceil(processedData.length / itemsPerPage) || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentCheaters = processedData.slice(startIndex, startIndex + itemsPerPage);
@@ -62,7 +58,6 @@ export default function Bans() {
   const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
   const goToPrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
 
-  // Infracțiuni
   const renderCrimes = (cheater) => {
     const crimes = [];
     if (cheater.bhophack > 0) crimes.push("Bhop Script");
@@ -79,7 +74,6 @@ export default function Bans() {
     ));
   };
 
-  // Logica BAN Status (Centrată)
   const renderBanStatus = (bannedVal) => {
     if (bannedVal === 0) {
       return (
@@ -106,10 +100,53 @@ export default function Bans() {
     return <span className="inline-block text-[10px] text-gray-500">UNKNOWN</span>;
   };
 
+  // Paginare normală (stil clasic)
+  const renderPaginationLinks = () => {
+    const pages = [];
+    const maxVisible = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+    if (endPage - startPage + 1 < maxVisible) {
+      startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+
+    if (startPage > 1) {
+      pages.push(
+        <button key={1} onClick={() => setCurrentPage(1)} className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-surface-container-highest border border-white/10 hover:bg-white/5 text-gray-400 hover:text-white font-bold text-xs transition-colors">
+          1
+        </button>
+      );
+      if (startPage > 2) pages.push(<span key="dots1" className="text-gray-500 px-1">...</span>);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <button 
+          key={i} 
+          onClick={() => setCurrentPage(i)}
+          className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center border font-bold text-xs transition-colors ${currentPage === i ? 'bg-primary-dim text-white border-primary-dim shadow-lg' : 'bg-surface-container-highest border-white/10 hover:bg-white/5 text-gray-400 hover:text-white'}`}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) pages.push(<span key="dots2" className="text-gray-500 px-1">...</span>);
+      pages.push(
+        <button key={totalPages} onClick={() => setCurrentPage(totalPages)} className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-surface-container-highest border border-white/10 hover:bg-white/5 text-gray-400 hover:text-white font-bold text-xs transition-colors">
+          {totalPages}
+        </button>
+      );
+    }
+
+    return pages;
+  };
+
   return (
     <div className="relative pt-32 pb-20 px-4 md:px-8 max-w-7xl mx-auto space-y-6 animate-fade-in min-h-screen flex flex-col">
       
-      {/* HEADER AMENINȚĂTOR */}
       <div className="border-b border-primary-dim/30 pb-6 flex flex-col md:flex-row justify-between items-end gap-6 shrink-0">
         <div>
           <h1 className="font-headline text-5xl md:text-7xl font-black uppercase tracking-tighter text-white leading-none">
@@ -121,7 +158,6 @@ export default function Bans() {
         </div>
       </div>
 
-      {/* PANOU DE CONTROL */}
       <div className="bg-surface-container-low/40 border border-white/5 p-4 flex flex-col md:flex-row gap-4 shrink-0">
         <input 
           type="text" 
@@ -154,68 +190,61 @@ export default function Bans() {
         </select>
       </div>
 
-      {/* TABELUL EXCEL / DATABASE STYLE */}
       <div className="flex-1 overflow-x-auto border border-white/10 bg-surface-container-low/30">
-        <table className="w-full text-left font-mono text-sm whitespace-nowrap">
-          <thead className="bg-surface-container-highest border-b border-white/10 text-gray-400 text-[10px] uppercase tracking-widest">
+        <table className="w-full text-left font-mono whitespace-nowrap">
+          {/* FONT MĂRIT LA th: text-[12px] font-bold */}
+          <thead className="bg-surface-container-highest border-b border-white/10 text-gray-400 text-[12px] font-bold uppercase tracking-widest">
             <tr>
-              <th className="px-6 py-4 font-normal">Operator</th>
-              <th className="px-6 py-4 font-normal">Detected Anomalies</th>
-              <th className="px-6 py-4 font-normal text-center w-[150px]">Status</th> {/* Inversat și centrat */}
-              <th className="px-6 py-4 font-normal text-right">Date of Ban</th> {/* Inversat și mutat la dreapta */}
+              <th className="px-6 py-4">Name</th>
+              <th className="px-6 py-4">Detected Using</th>
+              <th className="px-6 py-4 text-center w-[150px]">Status</th>
+              <th className="px-6 py-4 text-right">Date of Ban</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5 text-gray-300">
+          <tbody className="divide-y divide-white/5 text-gray-300 text-[15px]">
             {currentCheaters.map((cheater) => (
               <tr key={cheater.id} className="hover:bg-white/[0.03] transition-colors group">
                 
-                {/* 1. OPERATOR (Link către profilul intern al site-ului) */}
-                <td className="px-6 py-4">
+                <td className="px-6 py-5">
                   <Link 
                     to={`/profile/${cheater.steamid}`} 
                     className="flex items-center gap-4 cursor-pointer"
                     title="View Sway Profile"
                   >
-                    {/* Steagul */}
                     {cheater.country && cheater.country.length > 0 ? (
                       <img 
                         src={`https://community.fastly.steamstatic.com/public/images/countryflags/${cheater.country.toLowerCase()}.gif`} 
                         alt={cheater.country} 
-                        className="w-[22px] h-[16px] shadow-[0_0_5px_rgba(0,0,0,0.5)] opacity-90 group-hover:opacity-100 transition-opacity"
+                        className="w-[24px] h-[18px] shadow-[0_0_5px_rgba(0,0,0,0.5)] opacity-90 group-hover:opacity-100 transition-opacity"
                         onError={(e) => { e.target.style.display = 'none'; }} 
                       />
                     ) : (
                       <span className="text-[10px] text-gray-600 uppercase border border-white/5 px-1 bg-white/5">UNK</span>
                     )}
 
-                    {/* Avatar */}
                     <img 
                       src={cheater.avatarurl || `https://api.dicebear.com/7.x/bottts/svg?seed=${cheater.name}&backgroundColor=e90036`} 
                       alt="avatar" 
-                      className="w-8 h-8 object-cover border border-primary-dim/30 grayscale opacity-80 group-hover:grayscale-0 group-hover:border-primary-dim transition-all"
+                      className="w-10 h-10 object-cover border border-primary-dim/30 grayscale opacity-80 group-hover:grayscale-0 group-hover:border-primary-dim transition-all"
                     />
                     
-                    {/* Nume */}
-                    <span className="font-headline font-bold text-white uppercase text-base truncate max-w-[200px] group-hover:text-primary-dim transition-colors">
+                    <span className="font-headline font-bold text-white uppercase text-[17px] truncate max-w-[200px] group-hover:text-primary-dim transition-colors">
                       {cheater.name}
                     </span>
                   </Link>
                 </td>
 
-                {/* 2. DETECTED ANOMALIES */}
-                <td className="px-6 py-4">
+                <td className="px-6 py-5">
                   <div className="flex gap-2">
                     {renderCrimes(cheater)}
                   </div>
                 </td>
 
-                {/* 3. STATUS (Centrat pe coloană) */}
-                <td className="px-6 py-4 text-center">
+                <td className="px-6 py-5 text-center">
                   {renderBanStatus(cheater.banned)}
                 </td>
 
-                {/* 4. DATE (Aliniat dreapta ca să arate curat marginile) */}
-                <td className="px-6 py-4 text-xs text-gray-500 text-right">
+                <td className="px-6 py-5 text-sm text-gray-500 font-bold text-right">
                   {cheater.date || 'UNKNOWN'}
                 </td>
 
@@ -231,28 +260,30 @@ export default function Bans() {
         )}
       </div>
 
-      {/* SISTEMUL DE PAGINARE */}
+      {/* PAGINARE CLASICĂ (la fel ca la Leaderboard) */}
       {totalPages > 1 && (
-        <div className="flex justify-between items-center border-t border-white/10 pt-6 shrink-0">
-           <button 
-             onClick={goToPrevPage} 
-             disabled={currentPage === 1}
-             className="px-6 py-3 border border-white/10 bg-surface-container-highest text-white font-headline text-xs uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
-           >
-             &larr; PREV
-           </button>
-           
-           <div className="text-[10px] font-headline text-gray-400 uppercase tracking-[0.3em]">
-             PAGE <span className="text-white font-bold">{currentPage}</span> OF <span className="text-white font-bold">{totalPages}</span>
-           </div>
+        <div className="flex justify-center items-center border-t border-white/10 pt-8 shrink-0">
+           <div className="flex items-center gap-2">
+             <button 
+               onClick={goToPrevPage} 
+               disabled={currentPage === 1}
+               className="h-8 md:h-10 px-3 md:px-4 border border-white/10 bg-surface-container-highest text-white font-headline text-xs uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 transition-colors flex items-center"
+             >
+               &larr; PREV
+             </button>
+             
+             <div className="flex gap-1 md:gap-2 mx-2">
+               {renderPaginationLinks()}
+             </div>
 
-           <button 
-             onClick={goToNextPage} 
-             disabled={currentPage === totalPages}
-             className="px-6 py-3 border border-white/10 bg-surface-container-highest text-white font-headline text-xs uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
-           >
-             NEXT &rarr;
-           </button>
+             <button 
+               onClick={goToNextPage} 
+               disabled={currentPage === totalPages}
+               className="h-8 md:h-10 px-3 md:px-4 border border-white/10 bg-surface-container-highest text-white font-headline text-xs uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 transition-colors flex items-center"
+             >
+               NEXT &rarr;
+             </button>
+           </div>
         </div>
       )}
 

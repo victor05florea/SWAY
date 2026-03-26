@@ -59,38 +59,39 @@ function Navigation() {
 
 function App() {
   
-  // LOGICĂ SCROLLBAR (DISPARE MAI RAPID, RĂMÂNE ACTIV CÂND ȚII MOUSE-UL PE EL)
+  // LOGICĂ SCROLLBAR: APARE INSTANT LA HOVER PE MARGINE SAU LA SCROLL
   useEffect(() => {
     let scrollTimeout;
-    let isHoveringScrollbar = false;
+    let isHoveringEdge = false;
 
     const handleScroll = () => {
       document.documentElement.classList.add('is-scrolling');
       resetTimer();
     };
 
-    // Ascultăm unde este mouse-ul pe ecran
+    // Funcția care ascultă mouse-ul
     const handleMouseMove = (e) => {
-      // Dacă mouse-ul este în ultimii 15 pixeli din extrema dreaptă (pe scrollbar)
-      if (e.clientX >= window.innerWidth - 15) {
-        isHoveringScrollbar = true;
-        document.documentElement.classList.add('is-scrolling');
-        clearTimeout(scrollTimeout); // Oprim cronometrul, NU ascundem bara
+      // Dacă mouse-ul se află în ultimii 30 de pixeli din dreapta ecranului
+      if (e.clientX >= window.innerWidth - 30) {
+        isHoveringEdge = true;
+        document.documentElement.classList.add('is-scrolling'); // Îl facem vizibil instant
+        clearTimeout(scrollTimeout); // Oprim orice timer de dispariție
       } else {
-        if (isHoveringScrollbar) {
-          isHoveringScrollbar = false;
-          resetTimer(); // Dacă ai dat mouse-ul la o parte de pe scrollbar, pornim timer-ul de ascundere
+        // Dacă plecăm de pe margine
+        if (isHoveringEdge) {
+          isHoveringEdge = false;
+          resetTimer(); // Pornim timer-ul de ascundere
         }
       }
     };
 
     const resetTimer = () => {
       clearTimeout(scrollTimeout);
-      // Dacă mouse-ul NU este ținut intenționat pe scrollbar, ascunde-l în 600ms
-      if (!isHoveringScrollbar) {
+      // Dispariție după 600ms de inactivitate a scroll-ului, cu condiția să nu fim cu mouse-ul pe margine
+      if (!isHoveringEdge) {
         scrollTimeout = setTimeout(() => {
           document.documentElement.classList.remove('is-scrolling');
-        }, 600); // Dispariție mult mai rapidă
+        }, 600);
       }
     };
 
@@ -108,10 +109,10 @@ function App() {
     <Router>
       <div className="min-h-screen relative font-body selection:bg-primary-dim selection:text-white flex flex-col">
         
-        {/* CSS GLOBAL PENTRU AUTO-HIDE SCROLLBAR ROȘU CU TRANZIȚIE */}
+        {/* CSS GLOBAL PENTRU SCROLLBAR */}
         <style>{`
           html ::-webkit-scrollbar {
-            width: 6px; /* Ușor mai lat ca să poți face click pe el mai simplu */
+            width: 6px;
             background: transparent;
           }
           
@@ -119,19 +120,19 @@ function App() {
             background: transparent;
           }
           
-          /* Starea normală (INVIZIBIL). Am adăugat tranzitie pt suport limitat in WebKit */
+          /* INVIZIBIL - Starea normală */
           html ::-webkit-scrollbar-thumb {
             background: rgba(233, 0, 54, 0); 
             border-radius: 6px;
             transition: background-color 0.4s ease-out;
           }
 
-          /* Starea activă (Vede roșul SWAY) */
+          /* VIZIBIL - La scroll SAU la hover pe zona din dreapta */
           html.is-scrolling ::-webkit-scrollbar-thumb {
             background: rgba(233, 0, 54, 0.6);
           }
           
-          /* Starea de hover peste el (Roșu aprins) */
+          /* ROȘU APRINS - Când chiar pui mouse-ul pe bară */
           html.is-scrolling ::-webkit-scrollbar-thumb:hover {
             background: rgba(233, 0, 54, 1);
           }

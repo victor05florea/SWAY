@@ -206,7 +206,7 @@ export default function Profile() {
         
         <div className="lg:col-span-2 bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 space-y-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
           <div className="flex items-center justify-between border-b border-outline-variant/10 pb-4">
-            <h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Service Record</h3>
+            <h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Stats</h3>
           </div>
           <div className="grid grid-cols-2 gap-y-6 gap-x-4">
             <div className="space-y-1">
@@ -259,7 +259,7 @@ export default function Profile() {
 
         <div className="lg:col-span-2 bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 space-y-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
           <div className="flex items-center justify-between border-b border-outline-variant/10 pb-4">
-            <h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Combat Record</h3>
+            <h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Combat</h3>
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-1">
@@ -279,7 +279,7 @@ export default function Profile() {
 
         <div className="lg:col-span-2 bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 space-y-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
           <div className="flex items-center justify-between border-b border-outline-variant/10 pb-4">
-            <h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Kinetics</h3>
+            <h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Movement</h3>
           </div>
           <div className="space-y-6">
             <div>

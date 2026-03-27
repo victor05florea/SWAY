@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-// 1. Transformă orice ID în format 64
 const getSteamId64 = (rawId) => {
   if (!rawId) return "";
   let idStr = String(rawId).trim();
@@ -24,7 +23,6 @@ const getSteamId64 = (rawId) => {
   return idStr; 
 };
 
-// 2. Transformă STEAM_X:Y:Z în AccountID (pentru a-l asocia cu jucătorul)
 const steamToAccountId = (steamId) => {
   if (!steamId) return "";
   const idStr = String(steamId).trim().toLowerCase();
@@ -39,7 +37,6 @@ const steamToAccountId = (steamId) => {
   return idStr;
 };
 
-// --- HELPERE PENTRU CITIRE DATE ---
 const parseNum = (val) => {
   if (val === null || val === undefined) return 0;
   const parsed = parseFloat(val);
@@ -111,64 +108,67 @@ export default function Leaderboard() {
   const itemsPerPage = 50;
 
   useEffect(() => {
-    Promise.all([
-      fetch('http://localhost:8080/api/players/all').then(res => res.json()),
-      fetch('http://localhost:8080/api/jumps/pre').then(res => res.ok ? res.json() : []).catch(() => []),
-      fetch('http://localhost:8080/api/jumps/nopre').then(res => res.ok ? res.json() : []).catch(() => [])
-    ])
-    .then(([playersData, preData, nopreData]) => {
-      const preMap = {};
-      preData.forEach(j => {
-        if (j.steamid) preMap[steamToAccountId(j.steamid)] = j;
-      });
+    const fetchData = () => {
+      Promise.all([
+        fetch('/api/players/all').then(res => res.json()),
+        fetch('/api/jumps/pre').then(res => res.ok ? res.json() : []).catch(() => []),
+        fetch('/api/jumps/nopre').then(res => res.ok ? res.json() : []).catch(() => [])
+      ])
+      .then(([playersData, preData, nopreData]) => {
+        const preMap = {};
+        preData.forEach(j => {
+          if (j.steamid) preMap[steamToAccountId(j.steamid)] = j;
+        });
 
-      const nopreMap = {};
-      nopreData.forEach(j => {
-        if (j.steamid) nopreMap[steamToAccountId(j.steamid)] = j;
-      });
+        const nopreMap = {};
+        nopreData.forEach(j => {
+          if (j.steamid) nopreMap[steamToAccountId(j.steamid)] = j;
+        });
 
-      const combinedPlayers = playersData.map(p => {
-        const accId = steamToAccountId(p.steamid || p.steamId);
-        return {
-          ...p,
-          jumpStatsPre: p.jumpStatsPre || preMap[accId] || null,
-          jumpStatsNoPre: p.jumpStatsNoPre || nopreMap[accId] || null
-        };
-      });
+        const combinedPlayers = playersData.map(p => {
+          const accId = steamToAccountId(p.steamid || p.steamId);
+          return {
+            ...p,
+            jumpStatsPre: p.jumpStatsPre || preMap[accId] || null,
+            jumpStatsNoPre: p.jumpStatsNoPre || nopreMap[accId] || null
+          };
+        });
 
-      setPlayers(combinedPlayers);
-      setLoading(false);
-    })
-    .catch(err => {
-      console.error("Eroare la aducerea datelor:", err);
-      setLoading(false);
-    });
+        setPlayers(combinedPlayers);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Eroare la aducerea datelor:", err);
+        setLoading(false);
+      });
+    };
+
+    fetchData();
+
+    const interval = setInterval(fetchData, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
-  // 1. Când se schimbă TAB-ul principal (HNS, MIX, JUMPS), resetăm filtrele default
   useEffect(() => {
     if (mode === "HNS") setSortOrder("KILLS");
     if (mode === "MIX") setSortOrder("ELO");
     if (mode === "JUMPS") setJumpType("LONGJUMP");
   }, [mode]);
 
-  // 2. Orice acțiune de filtrare sau schimbare (dar NU tab-ul principal) ne trimite la pagina 1
   useEffect(() => {
     setCurrentPage(1);
   }, [mode, searchTerm, sortOrder, sortDirection, jumpServer, jumpType]);
 
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center font-headline text-primary-dim text-2xl animate-pulse tracking-widest uppercase">Loading Database Records...</div>;
 
-  // 1. Filtrare mod
   let baseData = players;
   if (mode === "MIX") {
     baseData = baseData.filter(p => (p.mixgames || p.mixGames || 0) > 0);
   } else if (mode === "JUMPS") {
-    // Arată doar jucătorii care au distanța > 0 la acel jump specific
     baseData = baseData.filter(p => getJumpDistance(p, jumpServer, jumpType) > 0);
   }
 
-  // 2. Sortare completă
   baseData = [...baseData].sort((a, b) => {
     let valA = 0; let valB = 0;
     
@@ -275,7 +275,7 @@ export default function Leaderboard() {
         <div className="flex bg-surface-container-low border border-white/10 p-1.5 rounded-sm overflow-x-auto">
            <button onClick={() => setMode("HNS")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "HNS" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Public HNS</button>
            <button onClick={() => setMode("MIX")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "MIX" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Competitive Mix</button>
-           <button onClick={() => setMode("JUMPS")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "JUMPS" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Jump Stats</button>
+           <button onClick={() => setMode("JUMPS")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "JUMPS" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Movement Records</button>
         </div>
       </div>
 

@@ -19,59 +19,72 @@ export default function Profile() {
     return () => { document.body.style.overflow = 'auto'; };
   }, []);
 
+  // Modificat pentru DEPLOY (Rute Relative și Fals Real-Time / Polling)
   useEffect(() => {
     if (!id || id === "undefined") {
       setLoading(false);
       return;
     }
 
-    // Aducem simultan datele jucătorului curent ȘI lista tuturor jucătorilor pentru calcularea rank-ului
-    Promise.all([
-      fetch(`http://localhost:8080/api/players/${id}`).then(res => {
-        if (!res.ok) throw new Error("Jucătorul nu a fost găsit în baza de date.");
-        return res.json();
-      }),
-      fetch(`http://localhost:8080/api/players/all`).then(res => res.json()).catch(() => [])
-    ])
-      .then(([playerData, allPlayers]) => {
-        if (playerData.error || !playerData.name) throw new Error("Date invalide primite de la server.");
-        
-        setPlayer(playerData);
-
-        // --- CALCULARE MIX RANK ÎN TIMP REAL ---
-        const games = playerData.mixgames || playerData.mixGames || 0;
-        
-        if (games > 0 && allPlayers.length > 0) {
-          // 1. Filtrăm doar jucătorii cu meciuri de mix > 0
-          const rankedPlayers = allPlayers.filter(p => (p.mixgames || p.mixGames || 0) > 0);
+    const fetchProfileData = () => {
+      // Aducem simultan datele jucătorului curent ȘI lista tuturor jucătorilor pentru calcularea rank-ului
+      Promise.all([
+        fetch(`/api/players/${id}`).then(res => {
+          if (!res.ok) throw new Error("Jucătorul nu a fost găsit în baza de date.");
+          return res.json();
+        }),
+        fetch(`/api/players/all`).then(res => res.json()).catch(() => [])
+      ])
+        .then(([playerData, allPlayers]) => {
+          if (playerData.error || !playerData.name) throw new Error("Date invalide primite de la server.");
           
-          // 2. Sortăm descrescător după ELO
-          rankedPlayers.sort((a, b) => {
-            const eloA = a.mixelo || a.mixElo || 0;
-            const eloB = b.mixelo || b.mixElo || 0;
-            return eloB - eloA;
-          });
+          setPlayer(playerData);
 
-          // 3. Găsim poziția jucătorului nostru
-          const pSteamId = String(playerData.steamid || playerData.steamId).toLowerCase();
-          const playerIndex = rankedPlayers.findIndex(p => String(p.steamid || p.steamId).toLowerCase() === pSteamId);
+          // --- CALCULARE MIX RANK ÎN TIMP REAL ---
+          const games = playerData.mixgames || playerData.mixGames || 0;
           
-          if (playerIndex !== -1) {
-            setMixRank(`#${playerIndex + 1}`);
+          if (games > 0 && allPlayers.length > 0) {
+            // 1. Filtrăm doar jucătorii cu meciuri de mix > 0
+            const rankedPlayers = allPlayers.filter(p => (p.mixgames || p.mixGames || 0) > 0);
+            
+            // 2. Sortăm descrescător după ELO
+            rankedPlayers.sort((a, b) => {
+              const eloA = a.mixelo || a.mixElo || 0;
+              const eloB = b.mixelo || b.mixElo || 0;
+              return eloB - eloA;
+            });
+
+            // 3. Găsim poziția jucătorului nostru
+            const pSteamId = String(playerData.steamid || playerData.steamId).toLowerCase();
+            const playerIndex = rankedPlayers.findIndex(p => String(p.steamid || p.steamId).toLowerCase() === pSteamId);
+            
+            if (playerIndex !== -1) {
+              setMixRank(`#${playerIndex + 1}`);
+            } else {
+              setMixRank("UNRANKED");
+            }
           } else {
             setMixRank("UNRANKED");
           }
-        } else {
-          setMixRank("UNRANKED");
-        }
 
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Eroare la încărcarea profilului:", err);
-        setPlayer(null); 
-        setLoading(false);
-      });
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Eroare la încărcarea profilului:", err);
+          // Nu suprascriem jucătorul cu 'null' dacă a picat un simplu refresh de 30 secunde
+          setLoading(false);
+        });
+    };
+
+    // Apelăm imediat la deschiderea profilului
+    fetchProfileData();
+
+    // Actualizăm datele profilului din fundal la fiecare 30 de secunde
+    const interval = setInterval(fetchProfileData, 30000);
+
+    // Curățăm intervalul la ieșirea de pe pagină
+    return () => clearInterval(interval);
+
   }, [id]);
 
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center font-headline text-primary-dim text-2xl animate-pulse tracking-widest uppercase">Establishing secure connection...</div>;

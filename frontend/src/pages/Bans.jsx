@@ -13,16 +13,24 @@ export default function Bans() {
   const itemsPerPage = 50;
 
   useEffect(() => {
-    fetch('http://localhost:8080/api/cheaters')
-      .then(res => res.json())
-      .then(data => {
-        setCheaters(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Eroare la baza de date de bans:", err);
-        setLoading(false);
-      });
+    const fetchCheaters = () => {
+      fetch("/api/cheaters")
+        .then(res => res.json())
+        .then(data => {
+          setCheaters(data);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Eroare la baza de date de bans:", err);
+          setLoading(false);
+        });
+    };
+
+    fetchCheaters();
+
+    const interval = setInterval(fetchCheaters, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -100,7 +108,6 @@ export default function Bans() {
     return <span className="inline-block text-[10px] text-gray-500">UNKNOWN</span>;
   };
 
-  // Paginare normală (stil clasic)
   const renderPaginationLinks = () => {
     const pages = [];
     const maxVisible = 5;
@@ -192,7 +199,6 @@ export default function Bans() {
 
       <div className="flex-1 overflow-x-auto border border-white/10 bg-surface-container-low/30">
         <table className="w-full text-left font-mono whitespace-nowrap">
-          {/* FONT MĂRIT LA th: text-[12px] font-bold */}
           <thead className="bg-surface-container-highest border-b border-white/10 text-gray-400 text-[12px] font-bold uppercase tracking-widest">
             <tr>
               <th className="px-6 py-4">Name</th>
@@ -211,7 +217,7 @@ export default function Bans() {
                     className="flex items-center gap-4 cursor-pointer"
                     title="View Sway Profile"
                   >
-                    {cheater.country && cheater.country.length > 0 ? (
+                    {cheater.country && cheater.country.length > 0 && cheater.country.toLowerCase() !== 'un' ? (
                       <img 
                         src={`https://community.fastly.steamstatic.com/public/images/countryflags/${cheater.country.toLowerCase()}.gif`} 
                         alt={cheater.country} 
@@ -260,7 +266,6 @@ export default function Bans() {
         )}
       </div>
 
-      {/* PAGINARE CLASICĂ (la fel ca la Leaderboard) */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center border-t border-white/10 pt-8 shrink-0">
            <div className="flex items-center gap-2">

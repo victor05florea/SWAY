@@ -13,27 +13,38 @@ export default function Home() {
   ];
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/players/all")
-      .then(res => res.json())
-      .then(data => {
-        setTotalPlayers(data.length);
-        if (data && data.length > 0) {
-          const topPlayer = [...data].sort((a, b) => (b.weektime || 0) - (a.weektime || 0))[0];
-          setPotw(topPlayer);
-        }
-      })
-      .catch(err => console.error("Error fetching total players:", err));
+    const fetchPlayers = () => {
+      fetch("/api/players/all")
+        .then(res => res.json())
+        .then(data => {
+          setTotalPlayers(data.length);
+          if (data && data.length > 0) {
+            // Aflăm cel mai bun jucător al săptămânii
+            const topPlayer = [...data].sort((a, b) => (b.weektime || 0) - (a.weektime || 0))[0];
+            setPotw(topPlayer);
+          }
+        })
+        .catch(err => console.error("Error fetching total players:", err));
+    };
 
     const fetchServers = () => {
-      fetch("http://localhost:8080/api/servers") 
+      fetch("/api/servers") 
         .then(res => res.json())
         .then(data => setServers(data))
         .catch(err => console.error("Error fetching servers:", err));
     };
 
+    fetchPlayers();
     fetchServers();
-    const interval = setInterval(fetchServers, 10000);
-    return () => clearInterval(interval);
+
+
+    const playersInterval = setInterval(fetchPlayers, 30000);
+    const serversInterval = setInterval(fetchServers, 10000);
+
+    return () => {
+      clearInterval(playersInterval);
+      clearInterval(serversInterval);
+    };
   }, []);
 
   const categorizeMaps = (maps) => {
@@ -62,16 +73,15 @@ export default function Home() {
   const mapCategories = categorizeMaps(slideshowImages);
 
   const getServerData = (id) => {
-    // Fallback-ul in caz ca serverul e oprit sau inca se incarca
     return servers.find(s => s.server === id) || { 
       name: "Loading...", map: "---", players: "0", maxplayers: "32", 
       terrorists: "", counterterrorists: "", spectators: "", funjumpers: "",
-      serverip: "Loading..." // Backend-ul trimite variabila 'serverip'
+      serverip: "Loading..."
     };
   };
 
   const copyToClipboard = (ip, serverId) => {
-    if(!ip || ip === "Loading...") return; // Prevenim copierea textului 'Loading...'
+    if(!ip || ip === "Loading...") return; 
     navigator.clipboard.writeText(ip).then(() => {
       setCopiedServer(serverId);
       setTimeout(() => setCopiedServer(null), 2000); 
@@ -275,7 +285,6 @@ export default function Home() {
           const sData = getServerData(sId);
           const percentage = (parseInt(sData.players) / (parseInt(sData.maxplayers) || 32)) * 100;
           
-          // PRELUARE VARIABILE DIRECT DIN DATABASE PENTRU IP ȘI MAP
           const serverIP = sData.serverip || "Loading...";
           const currentMap = sData.map || "---";
 
@@ -327,19 +336,19 @@ export default function Home() {
                     </div>
                   </div>
                   
-<div 
-  onClick={() => copyToClipboard(serverIP, sId)}
-  className="bg-black/40 p-4 rounded-lg flex items-center justify-between border border-white/5 hover:border-primary-dim/30 hover:bg-black/70 transition-all cursor-pointer group/btn"
-  title="Click to copy server IP"
->
-  <code className="text-[14px] md:text-[13px] font-mono font-bold text-gray-300 group-hover/btn:text-white transition-colors tracking-widest">
-    {serverIP}
-  </code>
-  
-  <span className={`text-[9px] font-bold uppercase tracking-[0.2em] border px-2 py-1 rounded transition-colors ${copiedServer === sId ? 'text-emerald-400 border-emerald-400/20 bg-emerald-400/10' : 'text-primary-dim border-primary-dim/20 bg-primary-dim/5'}`}>
-    {copiedServer === sId ? 'Copied!' : 'Copy'}
-  </span>
-</div>
+                  <div 
+                    onClick={() => copyToClipboard(serverIP, sId)}
+                    className="bg-black/40 p-4 rounded-lg flex items-center justify-between border border-white/5 hover:border-primary-dim/30 hover:bg-black/70 transition-all cursor-pointer group/btn"
+                    title="Click to copy server IP"
+                  >
+                    <code className="text-[14px] md:text-[13px] font-mono font-bold text-gray-300 group-hover/btn:text-white transition-colors tracking-widest">
+                      {serverIP}
+                    </code>
+                    
+                    <span className={`text-[9px] font-bold uppercase tracking-[0.2em] border px-2 py-1 rounded transition-colors ${copiedServer === sId ? 'text-emerald-400 border-emerald-400/20 bg-emerald-400/10' : 'text-primary-dim border-primary-dim/20 bg-primary-dim/5'}`}>
+                      {copiedServer === sId ? 'Copied!' : 'Copy'}
+                    </span>
+                  </div>
 
                   <a href={`steam://connect/${serverIP}`} className="w-full block text-center bg-primary-dim hover:bg-white hover:text-black text-white py-3.5 rounded-lg font-black uppercase tracking-widest text-xs transition-all duration-300 shadow-lg shadow-primary-dim/10 hover:shadow-white/5">
                     Connect Now
@@ -403,13 +412,12 @@ export default function Home() {
               <div>
                 <h2 className="text-3xl font-black font-headline text-white uppercase tracking-tighter">Map <span className="text-primary-dim">Pool</span></h2>
               </div>
-              {/* CLOSE BUTTON (Identic cu cel din Profile) */}
-<button 
-  onClick={() => setIsMapModalOpen(false)} 
-  className="text-gray-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest border border-white/10 px-4 py-2 hover:bg-white/5 rounded-md cursor-pointer"
->
-  Close
-</button>
+              <button 
+                onClick={() => setIsMapModalOpen(false)} 
+                className="text-gray-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest border border-white/10 px-4 py-2 hover:bg-white/5 rounded-md cursor-pointer"
+              >
+                Close
+              </button>
             </div>
 
             <div className="p-8 overflow-y-auto custom-scrollbar flex-grow bg-gradient-to-b from-transparent to-black/40 space-y-12">

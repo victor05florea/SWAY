@@ -148,7 +148,6 @@ function App() {
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/bans" element={<Bans />} />
             <Route path="/profile/:id" element={<Profile />} />
-            
             <Route path="/demos" element={<div className="text-center text-white mt-32 font-headline text-3xl tracking-widest uppercase text-primary-dim">Demos Coming Soon</div>} />
           </Routes>
         </main>

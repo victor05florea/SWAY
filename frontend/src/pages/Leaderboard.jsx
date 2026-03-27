@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-// Funcție matematică supremă: Suportă STEAM_0:1..., Steam64 și Steam32 (AccountID)
+// Funcția de conversie în SteamID64
 const getSteamId64 = (rawId) => {
   if (!rawId) return "";
   let idStr = String(rawId).trim();
@@ -15,26 +15,84 @@ const getSteamId64 = (rawId) => {
         return ((z * 2n) + y + steam64Base).toString();
       }
     }
-    
     if (/^\d+$/.test(idStr) && idStr.length < 16) {
       return (BigInt(idStr) + steam64Base).toString();
     }
-
   } catch (e) {
     return "";
   }
-  return idStr;
+  return idStr; 
+};
+
+// --- HELPERE ADAPTATE LA JSON-UL TĂU ---
+// Funcție care alege obiectul corect: jumpStatsPre sau jumpStatsNoPre
+const getStatsObject = (player, server) => {
+  if (server === "pre") return player.jumpStatsPre || {};
+  return player.jumpStatsNoPre || {};
+};
+
+const parseNum = (val) => {
+  const parsed = parseFloat(val);
+  return isNaN(parsed) ? 0 : parsed;
+};
+
+// Caută distanța în obiectul selectat (folosind denumirile din Java)
+const getJumpDistance = (p, server, type) => {
+  const stats = getStatsObject(p, server);
+  switch(type) {
+    case 'LONGJUMP': return parseNum(stats.longjump);
+    case 'COUNTJUMP': return parseNum(stats.countjump);
+    case 'BHOP': return parseNum(stats.bhop);
+    case 'WEIRDJUMP': return parseNum(stats.wjRecord);
+    case 'LADDERJUMP': return parseNum(stats.lajRecord);
+    case 'DROPBHOP': return parseNum(stats.dsbjRecord);
+    case 'LJBLOCK': return parseNum(stats.lbrRecord);
+    default: return 0;
+  }
+};
+
+const getJumpStrafes = (p, server, type) => {
+  const stats = getStatsObject(p, server);
+  switch(type) {
+    case 'LONGJUMP': return parseNum(stats.ljStrafes);
+    case 'COUNTJUMP': return parseNum(stats.cjStrafes);
+    case 'BHOP': return parseNum(stats.bjStrafes);
+    case 'WEIRDJUMP': return parseNum(stats.wjStrafes);
+    case 'LADDERJUMP': return parseNum(stats.lajStrafes);
+    case 'DROPBHOP': return parseNum(stats.dsbjStrafes);
+    case 'LJBLOCK': return parseNum(stats.lbrStrafes);
+    default: return 0;
+  }
+};
+
+const getJumpSync = (p, server, type) => {
+  const stats = getStatsObject(p, server);
+  switch(type) {
+    case 'LONGJUMP': return parseNum(stats.ljSync);
+    case 'COUNTJUMP': return parseNum(stats.cjSync);
+    case 'BHOP': return parseNum(stats.bjSync);
+    case 'WEIRDJUMP': return parseNum(stats.wjSync);
+    case 'LADDERJUMP': return parseNum(stats.lajSync);
+    case 'DROPBHOP': return parseNum(stats.dsbjSync);
+    case 'LJBLOCK': return parseNum(stats.lbrSync);
+    default: return 0;
+  }
 };
 
 export default function Leaderboard() {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  const [mode, setMode] = useState("HNS");
-  
+  const [mode, setMode] = useState("HNS"); 
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // State-uri pentru HNS / MIX
   const [sortOrder, setSortOrder] = useState("KILLS"); 
   const [sortDirection, setSortDirection] = useState("DESC");
+
+  // State-uri specifice pentru JUMPS
+  const [jumpServer, setJumpServer] = useState("pre"); // "pre" sau "nopre"
+  const [jumpType, setJumpType] = useState("LONGJUMP");
   
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
@@ -56,19 +114,22 @@ export default function Leaderboard() {
     setCurrentPage(1);
     if (mode === "HNS") setSortOrder("KILLS");
     if (mode === "MIX") setSortOrder("ELO");
-  }, [mode, searchTerm]);
+    if (mode === "JUMPS") setJumpType("LONGJUMP");
+  }, [mode, searchTerm, jumpServer, jumpType]);
 
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center font-headline text-primary-dim text-2xl animate-pulse tracking-widest uppercase">Loading Database Records...</div>;
 
-  // 1. Filtrare mod (MIX / HNS)
   let baseData = players;
   if (mode === "MIX") {
     baseData = baseData.filter(p => (p.mixgames || p.mixGames || 0) > 0);
+  } else if (mode === "JUMPS") {
+    // Arată doar jucătorii care au distanța > 0 la tipul și serverul ales
+    baseData = baseData.filter(p => getJumpDistance(p, jumpServer, jumpType) > 0);
   }
 
-  // 2. Sortare completă
   baseData = [...baseData].sort((a, b) => {
     let valA = 0; let valB = 0;
+    
     if (mode === "HNS") {
       if (sortOrder === "KILLS") { valA = a.kills || 0; valB = b.kills || 0; } 
       else if (sortOrder === "WEEKTIME") { valA = a.time || a.weektime || 0; valB = b.time || b.weektime || 0; }
@@ -78,8 +139,17 @@ export default function Leaderboard() {
       else if (sortOrder === "WON") { valA = a.mixwon || a.mixWon || 0; valB = b.mixwon || b.mixWon || 0; } 
       else if (sortOrder === "DISCONNECTS") { valA = a.mixdisconnects || a.mixDisconnects || 0; valB = b.mixdisconnects || b.mixDisconnects || 0; } 
       else if (sortOrder === "STABS") { valA = a.mixtotalstabs || a.mixTotalStabs || 0; valB = b.mixtotalstabs || b.mixTotalStabs || 0; }
+    } else if (mode === "JUMPS") {
+      // Sortare forțată DESCRESCĂTOR (cel mai bun jumper primul)
+      valA = getJumpDistance(a, jumpServer, jumpType);
+      valB = getJumpDistance(b, jumpServer, jumpType);
+      return valB - valA; 
     }
-    return sortDirection === "DESC" ? valB - valA : valA - valB;
+
+    if (mode !== "JUMPS") {
+      return sortDirection === "DESC" ? valB - valA : valA - valB;
+    }
+    return 0;
   });
 
   baseData = baseData.map((p, index) => ({ ...p, trueRank: index + 1 }));
@@ -88,45 +158,38 @@ export default function Leaderboard() {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return true;
 
-    const pName = (p.name || "").toLowerCase();
-    const pSteamId = (p.steamid || p.steamId || "").toLowerCase();
-    const pSteam64 = getSteamId64(pSteamId);
-    const match64 = term.match(/\d{17}/);
-    if (match64 && match64[0] === pSteam64) return true;
-    if (pName.includes(term)) return true;
-    if (pSteamId.includes(term)) return true;
+    const pName = String(p.name || "").toLowerCase();
+    const pSteamId = String(p.steamid || p.steamId || "").toLowerCase();
+    const calculated64 = getSteamId64(pSteamId);
+    
+    const urlMatch = term.match(/\d{17}/);
+    const search64 = urlMatch ? urlMatch[0] : "";
 
-    return false;
+    return pName.includes(term) || 
+           pSteamId.includes(term) || 
+           calculated64.includes(term) ||
+           (search64 && calculated64 === search64);
   });
 
   const totalPages = Math.ceil(processedData.length / itemsPerPage) || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentPlayers = processedData.slice(startIndex, startIndex + itemsPerPage);
+
   const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
   const goToPrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
   const formatNumber = (num) => num ? Number(num).toLocaleString('de-DE') : '0';
+
   const getRoleBadges = (player) => {
     const roleStr = (player.role || player.status || player.admin || "").toString().toLowerCase();
     const isVip = player.vip && parseInt(player.vip) > 0;
     
     let badges = [];
-
-    if (roleStr.includes('developer') || roleStr.includes('dev')) {
-      badges.push(<span key="dev" className="text-[10px] bg-red-500/10 text-red-500 border border-red-500/30 px-2 py-1 font-bold uppercase tracking-widest">Developer</span>);
-    }
-    
-    if (roleStr.includes('head admin')) {
-      badges.push(<span key="hadmin" className="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/30 px-2 py-1 font-bold uppercase tracking-widest">Head Admin</span>);
-    } else if (roleStr.includes('admin') || roleStr === "1") {
-      badges.push(<span key="admin" className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-1 font-bold uppercase tracking-widest">Admin</span>);
-    }
-
-    if (isVip) {
-      badges.push(<span key="vip" className="text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-1 font-bold uppercase tracking-widest">VIP</span>);
-    }
+    if (roleStr.includes('developer') || roleStr.includes('dev')) badges.push(<span key="dev" className="text-[10px] bg-red-500/10 text-red-500 border border-red-500/30 px-2 py-1 font-bold uppercase tracking-widest">Developer</span>);
+    if (roleStr.includes('head admin')) badges.push(<span key="hadmin" className="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/30 px-2 py-1 font-bold uppercase tracking-widest">Head Admin</span>);
+    else if (roleStr.includes('admin') || roleStr === "1") badges.push(<span key="admin" className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-1 font-bold uppercase tracking-widest">Admin</span>);
+    if (isVip) badges.push(<span key="vip" className="text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-1 font-bold uppercase tracking-widest">VIP</span>);
 
     if (badges.length === 0) return null;
-
     return <div className="flex flex-wrap justify-center gap-1">{badges}</div>;
   };
 
@@ -136,9 +199,7 @@ export default function Leaderboard() {
     let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
     let endPage = Math.min(totalPages, startPage + maxVisible - 1);
 
-    if (endPage - startPage + 1 < maxVisible) {
-      startPage = Math.max(1, endPage - maxVisible + 1);
-    }
+    if (endPage - startPage + 1 < maxVisible) startPage = Math.max(1, endPage - maxVisible + 1);
 
     if (startPage > 1) {
       pages.push(<button key={1} onClick={() => setCurrentPage(1)} className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-surface-container-highest border border-white/10 hover:bg-white/5 text-gray-400 hover:text-white font-bold text-xs transition-colors">1</button>);
@@ -146,11 +207,7 @@ export default function Leaderboard() {
     }
 
     for (let i = startPage; i <= endPage; i++) {
-      pages.push(
-        <button key={i} onClick={() => setCurrentPage(i)} className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center border font-bold text-xs transition-colors ${currentPage === i ? 'bg-primary-dim text-white border-primary-dim shadow-lg' : 'bg-surface-container-highest border-white/10 hover:bg-white/5 text-gray-400 hover:text-white'}`}>
-          {i}
-        </button>
-      );
+      pages.push(<button key={i} onClick={() => setCurrentPage(i)} className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center border font-bold text-xs transition-colors ${currentPage === i ? 'bg-primary-dim text-white border-primary-dim shadow-lg' : 'bg-surface-container-highest border-white/10 hover:bg-white/5 text-gray-400 hover:text-white'}`}>{i}</button>);
     }
 
     if (endPage < totalPages) {
@@ -174,41 +231,65 @@ export default function Leaderboard() {
           </p>
         </div>
         
-        <div className="flex bg-surface-container-low border border-white/10 p-1.5 rounded-sm">
-           <button onClick={() => setMode("HNS")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] transition-all ${mode === "HNS" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Public HNS</button>
-           <button onClick={() => setMode("MIX")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] transition-all ${mode === "MIX" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Competitive Mix</button>
+        <div className="flex bg-surface-container-low border border-white/10 p-1.5 rounded-sm overflow-x-auto">
+           <button onClick={() => setMode("HNS")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "HNS" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Public HNS</button>
+           <button onClick={() => setMode("MIX")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "MIX" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Competitive Mix</button>
+           <button onClick={() => setMode("JUMPS")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "JUMPS" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Movement</button>
         </div>
       </div>
 
       <div className="bg-surface-container-low/40 border border-white/5 p-4 flex flex-col md:flex-row gap-4 shrink-0">
         <input 
           type="text" 
-          placeholder="SEARCH PLAYER... (name, id or profile link)" 
+          placeholder="SEARCH PLAYER..." 
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="flex-1 bg-surface-container-highest border border-white/10 text-white font-headline text-xs px-4 py-3 focus:outline-none focus:border-primary-dim transition-colors uppercase tracking-widest placeholder:text-gray-600"
         />
         
-        <button onClick={() => setSortDirection(prev => prev === "DESC" ? "ASC" : "DESC")} className="bg-surface-container-highest border border-white/10 text-gray-300 hover:text-white font-headline text-xs px-4 py-3 focus:outline-none uppercase tracking-widest cursor-pointer transition-colors">
-          {sortDirection === "DESC" ? "▼ DESC" : "▲ ASC"}
-        </button>
+        {mode !== "JUMPS" ? (
+          <>
+            <button onClick={() => setSortDirection(prev => prev === "DESC" ? "ASC" : "DESC")} className="bg-surface-container-highest border border-white/10 text-gray-300 hover:text-white font-headline text-xs px-4 py-3 focus:outline-none uppercase tracking-widest cursor-pointer transition-colors">
+              {sortDirection === "DESC" ? "▼ DESC" : "▲ ASC"}
+            </button>
+            <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} className="bg-surface-container-highest border border-white/10 text-gray-300 font-headline text-xs px-4 py-3 focus:outline-none focus:border-primary-dim uppercase tracking-widest cursor-pointer min-w-[200px]">
+              {mode === "HNS" && (
+                <>
+                  <option value="KILLS" className="bg-[#121212] text-white">SORT BY KILLS</option>
+                  <option value="WEEKTIME" className="bg-[#121212] text-white">SORT BY TOTAL TIME</option>
+                </>
+              )}
+              {mode === "MIX" && (
+                <>
+                  <option value="ELO" className="bg-[#121212] text-white">SORT BY MIX ELO</option>
+                  <option value="GAMES" className="bg-[#121212] text-white">SORT BY MIX GAMES</option>
+                  <option value="WON" className="bg-[#121212] text-white">SORT BY WINS</option>
+                  <option value="DISCONNECTS" className="bg-[#121212] text-white">SORT BY DISCONNECTS</option>
+                  <option value="STABS" className="bg-[#121212] text-white">SORT BY STABS</option>
+                </>
+              )}
+            </select>
+          </>
+        ) : (
+          <>
+            {/* DROP-DOWN PENTRU SERVER DE SĂRITURI (PRE vs NOPRE) */}
+            <select value={jumpServer} onChange={(e) => setJumpServer(e.target.value)} className="bg-surface-container-highest border border-white/10 text-primary-dim font-bold font-headline text-xs px-4 py-3 focus:outline-none focus:border-primary-dim uppercase tracking-widest cursor-pointer">
+              <option value="pre" className="bg-[#121212] text-white">PRE (100AA)</option>
+              <option value="nopre" className="bg-[#121212] text-white">NOPRE (10AA)</option>
+            </select>
 
-        <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} className="bg-surface-container-highest border border-white/10 text-gray-300 font-headline text-xs px-4 py-3 focus:outline-none focus:border-primary-dim uppercase tracking-widest cursor-pointer min-w-[200px]">
-          {mode === "HNS" ? (
-            <>
-              <option value="KILLS" className="bg-[#121212] text-white">SORT BY KILLS</option>
-              <option value="WEEKTIME" className="bg-[#121212] text-white">SORT BY TOTAL TIME</option>
-            </>
-          ) : (
-            <>
-              <option value="ELO" className="bg-[#121212] text-white">SORT BY MIX ELO</option>
-              <option value="GAMES" className="bg-[#121212] text-white">SORT BY MIX GAMES</option>
-              <option value="WON" className="bg-[#121212] text-white">SORT BY WINS</option>
-              <option value="DISCONNECTS" className="bg-[#121212] text-white">SORT BY DISCONNECTS</option>
-              <option value="STABS" className="bg-[#121212] text-white">SORT BY STABS</option>
-            </>
-          )}
-        </select>
+            {/* DROP-DOWN PENTRU TIPUL SĂRITURII */}
+            <select value={jumpType} onChange={(e) => setJumpType(e.target.value)} className="bg-surface-container-highest border border-white/10 text-gray-300 font-headline text-xs px-4 py-3 focus:outline-none focus:border-primary-dim uppercase tracking-widest cursor-pointer min-w-[200px]">
+              <option value="LONGJUMP" className="bg-[#121212] text-white">LONGJUMP (LJ)</option>
+              <option value="COUNTJUMP" className="bg-[#121212] text-white">COUNTJUMP (CJ)</option>
+              <option value="BHOP" className="bg-[#121212] text-white">BUNNYHOP (BJ)</option>
+              <option value="WEIRDJUMP" className="bg-[#121212] text-white">WEIRDJUMP (WJ)</option>
+              <option value="LADDERJUMP" className="bg-[#121212] text-white">LADDERJUMP (LAJ)</option>
+              <option value="DROPBHOP" className="bg-[#121212] text-white">DROP-BHOP (DBJ)</option>
+              <option value="LJBLOCK" className="bg-[#121212] text-white">LJ BLOCK (LJB)</option>
+            </select>
+          </>
+        )}
       </div>
 
       <div className="flex-1 overflow-x-auto border border-white/10 bg-surface-container-low/30">
@@ -216,21 +297,29 @@ export default function Leaderboard() {
           <thead className="bg-surface-container-highest border-b border-white/10 text-gray-400 text-[12px] font-bold uppercase tracking-widest">
             <tr>
               <th className="px-6 py-4 w-16 text-center">#</th>
-              <th className="px-6 py-4">Name</th>
+              <th className="px-6 py-4">Operator</th>
               <th className="px-6 py-4 text-center">Status</th>
               
-              {mode === "HNS" ? (
+              {mode === "HNS" && (
                 <>
                   <th className="px-6 py-4 text-center">Total Kills</th>
                   <th className="px-6 py-4 text-right">Total Time (HRS)</th>
                 </>
-              ) : (
+              )}
+              {mode === "MIX" && (
                 <>
                   <th className="px-6 py-4 text-center">Mix Games</th>
                   <th className="px-6 py-4 text-center">Mix Won</th>
                   <th className="px-6 py-4 text-center">Disconnects</th>
                   <th className="px-6 py-4 text-center">Stabs</th>
                   <th className="px-6 py-4 text-right text-primary-dim">Mix Elo</th>
+                </>
+              )}
+              {mode === "JUMPS" && (
+                <>
+                  <th className="px-6 py-4 text-center">Strafes</th>
+                  <th className="px-6 py-4 text-center">Sync</th>
+                  <th className="px-6 py-4 text-right text-primary-dim">Distance</th>
                 </>
               )}
             </tr>
@@ -293,6 +382,20 @@ export default function Leaderboard() {
                     </>
                   )}
 
+                  {mode === "JUMPS" && (
+                    <>
+                      <td className="px-6 py-5 text-center text-gray-300 font-bold">
+                        {getJumpStrafes(player, jumpServer, jumpType)}
+                      </td>
+                      <td className="px-6 py-5 text-center text-gray-400 font-bold">
+                        {Number(getJumpSync(player, jumpServer, jumpType)).toFixed(2)}%
+                      </td>
+                      <td className="px-6 py-5 text-right font-black text-primary-dim text-[18px] drop-shadow-md">
+                        {Number(getJumpDistance(player, jumpServer, jumpType)).toFixed(2)} <span className="text-xs text-gray-600 ml-1">u</span>
+                      </td>
+                    </>
+                  )}
+
                 </tr>
               );
             })}
@@ -312,6 +415,7 @@ export default function Leaderboard() {
            </div>
         </div>
       )}
+
     </div>
   );
 }

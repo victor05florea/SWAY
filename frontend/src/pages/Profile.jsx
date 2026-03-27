@@ -9,6 +9,9 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [jumpMode, setJumpMode] = useState("PRE");
+  
+  // State nou pentru a păstra rank-ul calculat
+  const [mixRank, setMixRank] = useState("UNRANKED");
 
   // Înghețăm scroll-ul paginii principale (dar păstrăm scroll în interiorul profilului)
   useEffect(() => {
@@ -22,14 +25,46 @@ export default function Profile() {
       return;
     }
 
-    fetch(`http://localhost:8080/api/players/${id}`)
-      .then(res => {
+    // Aducem simultan datele jucătorului curent ȘI lista tuturor jucătorilor pentru calcularea rank-ului
+    Promise.all([
+      fetch(`http://localhost:8080/api/players/${id}`).then(res => {
         if (!res.ok) throw new Error("Jucătorul nu a fost găsit în baza de date.");
         return res.json();
-      })
-      .then(data => {
-        if (data.error || !data.name) throw new Error("Date invalide primite de la server.");
-        setPlayer(data);
+      }),
+      fetch(`http://localhost:8080/api/players/all`).then(res => res.json()).catch(() => [])
+    ])
+      .then(([playerData, allPlayers]) => {
+        if (playerData.error || !playerData.name) throw new Error("Date invalide primite de la server.");
+        
+        setPlayer(playerData);
+
+        // --- CALCULARE MIX RANK ÎN TIMP REAL ---
+        const games = playerData.mixgames || playerData.mixGames || 0;
+        
+        if (games > 0 && allPlayers.length > 0) {
+          // 1. Filtrăm doar jucătorii cu meciuri de mix > 0
+          const rankedPlayers = allPlayers.filter(p => (p.mixgames || p.mixGames || 0) > 0);
+          
+          // 2. Sortăm descrescător după ELO
+          rankedPlayers.sort((a, b) => {
+            const eloA = a.mixelo || a.mixElo || 0;
+            const eloB = b.mixelo || b.mixElo || 0;
+            return eloB - eloA;
+          });
+
+          // 3. Găsim poziția jucătorului nostru
+          const pSteamId = String(playerData.steamid || playerData.steamId).toLowerCase();
+          const playerIndex = rankedPlayers.findIndex(p => String(p.steamid || p.steamId).toLowerCase() === pSteamId);
+          
+          if (playerIndex !== -1) {
+            setMixRank(`#${playerIndex + 1}`);
+          } else {
+            setMixRank("UNRANKED");
+          }
+        } else {
+          setMixRank("UNRANKED");
+        }
+
         setLoading(false);
       })
       .catch(err => {
@@ -157,8 +192,6 @@ export default function Profile() {
           &larr; Go Back
         </button>
 
-        {/* === AICI RĂMÂNE ABSOLUT TOT CONȚINUTUL TĂU VECHI (Secțiunile) === */}
-        {/* Adaugă secțiunile tale: Header (cu poza), Service Record, Mix Stats, etc. exact cum erau */}
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end border-b border-outline-variant/20 pb-8">
           <div className="lg:col-span-8 flex flex-col md:flex-row items-center md:items-end space-y-6 md:space-y-0 md:space-x-8">
             <div className="relative w-48 h-48 bg-surface-container-highest overflow-hidden border-2 border-primary-dim/20 shadow-[0_0_15px_rgba(233,0,54,0.15)] shrink-0">
@@ -180,7 +213,7 @@ export default function Profile() {
                    Server Rank: #{player.serverRank || 'Unranked'}
                 </span>
                 <span className="font-headline text-gray-400 tracking-[0.2em] text-xs font-bold uppercase mb-2">
-                   Mix elo: <span className="text-white">{player.mixelo || player.mixElo || 0}</span> <span className="text-primary-dim">(#{player.mixRank || player.mixrank || 'Unranked'})</span>
+                   Mix elo: <span className="text-white">{player.mixelo || player.mixElo || 0}</span> <span className="text-primary-dim">({mixRank})</span>
                 </span>
                 <div className="flex justify-center md:justify-start gap-2">
                     {getRoles().map(role => (

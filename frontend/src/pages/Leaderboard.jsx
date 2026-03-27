@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-// Funcția de conversie în SteamID64
+// 1. Transformă orice ID în format 64
 const getSteamId64 = (rawId) => {
   if (!rawId) return "";
   let idStr = String(rawId).trim();
@@ -24,29 +24,44 @@ const getSteamId64 = (rawId) => {
   return idStr; 
 };
 
-// --- HELPERE ADAPTATE LA JSON-UL TĂU ---
-// Funcție care alege obiectul corect: jumpStatsPre sau jumpStatsNoPre
-const getStatsObject = (player, server) => {
-  if (server === "pre") return player.jumpStatsPre || {};
-  return player.jumpStatsNoPre || {};
+// 2. Transformă STEAM_X:Y:Z în AccountID (pentru a-l asocia cu jucătorul)
+const steamToAccountId = (steamId) => {
+  if (!steamId) return "";
+  const idStr = String(steamId).trim().toLowerCase();
+  if (idStr.startsWith("steam_")) {
+    const parts = idStr.split(":");
+    if (parts.length === 3) {
+      const y = parseInt(parts[1], 10);
+      const z = parseInt(parts[2], 10);
+      return (z * 2 + y).toString();
+    }
+  }
+  return idStr;
 };
 
+// --- HELPERE PENTRU CITIRE DATE ---
 const parseNum = (val) => {
+  if (val === null || val === undefined) return 0;
   const parsed = parseFloat(val);
   return isNaN(parsed) ? 0 : parsed;
 };
 
-// Caută distanța în obiectul selectat (folosind denumirile din Java)
+const getStatsObject = (player, server) => {
+  if (!player) return {};
+  if (server === "pre") return player.jumpStatsPre || player.jumpstatspre || {};
+  return player.jumpStatsNoPre || player.jumpstatsnopre || {};
+};
+
 const getJumpDistance = (p, server, type) => {
   const stats = getStatsObject(p, server);
   switch(type) {
-    case 'LONGJUMP': return parseNum(stats.longjump);
-    case 'COUNTJUMP': return parseNum(stats.countjump);
-    case 'BHOP': return parseNum(stats.bhop);
-    case 'WEIRDJUMP': return parseNum(stats.wjRecord);
-    case 'LADDERJUMP': return parseNum(stats.lajRecord);
-    case 'DROPBHOP': return parseNum(stats.dsbjRecord);
-    case 'LJBLOCK': return parseNum(stats.lbrRecord);
+    case 'LONGJUMP': return parseNum(stats.longjump || stats.ljRecord || stats.LJ_record);
+    case 'COUNTJUMP': return parseNum(stats.countjump || stats.cjRecord || stats.CJ_record);
+    case 'BHOP': return parseNum(stats.bhop || stats.bjRecord || stats.BJ_record);
+    case 'WEIRDJUMP': return parseNum(stats.wjRecord || stats.WJ_record);
+    case 'LADDERJUMP': return parseNum(stats.lajRecord || stats.LAJ_record);
+    case 'DROPBHOP': return parseNum(stats.dsbjRecord || stats.DBJ_record);
+    case 'LJBLOCK': return parseNum(stats.lbrRecord || stats.LJB_record);
     default: return 0;
   }
 };
@@ -54,13 +69,13 @@ const getJumpDistance = (p, server, type) => {
 const getJumpStrafes = (p, server, type) => {
   const stats = getStatsObject(p, server);
   switch(type) {
-    case 'LONGJUMP': return parseNum(stats.ljStrafes);
-    case 'COUNTJUMP': return parseNum(stats.cjStrafes);
-    case 'BHOP': return parseNum(stats.bjStrafes);
-    case 'WEIRDJUMP': return parseNum(stats.wjStrafes);
-    case 'LADDERJUMP': return parseNum(stats.lajStrafes);
-    case 'DROPBHOP': return parseNum(stats.dsbjStrafes);
-    case 'LJBLOCK': return parseNum(stats.lbrStrafes);
+    case 'LONGJUMP': return parseNum(stats.ljStrafes || stats.LJ_strafes);
+    case 'COUNTJUMP': return parseNum(stats.cjStrafes || stats.CJ_strafes);
+    case 'BHOP': return parseNum(stats.bjStrafes || stats.BJ_strafes);
+    case 'WEIRDJUMP': return parseNum(stats.wjStrafes || stats.WJ_strafes);
+    case 'LADDERJUMP': return parseNum(stats.lajStrafes || stats.LAJ_strafes);
+    case 'DROPBHOP': return parseNum(stats.dsbjStrafes || stats.DBJ_strafes);
+    case 'LJBLOCK': return parseNum(stats.lbrStrafes || stats.LJB_strafes);
     default: return 0;
   }
 };
@@ -68,13 +83,13 @@ const getJumpStrafes = (p, server, type) => {
 const getJumpSync = (p, server, type) => {
   const stats = getStatsObject(p, server);
   switch(type) {
-    case 'LONGJUMP': return parseNum(stats.ljSync);
-    case 'COUNTJUMP': return parseNum(stats.cjSync);
-    case 'BHOP': return parseNum(stats.bjSync);
-    case 'WEIRDJUMP': return parseNum(stats.wjSync);
-    case 'LADDERJUMP': return parseNum(stats.lajSync);
-    case 'DROPBHOP': return parseNum(stats.dsbjSync);
-    case 'LJBLOCK': return parseNum(stats.lbrSync);
+    case 'LONGJUMP': return parseNum(stats.ljSync || stats.LJ_sync);
+    case 'COUNTJUMP': return parseNum(stats.cjSync || stats.CJ_sync);
+    case 'BHOP': return parseNum(stats.bjSync || stats.BJ_sync);
+    case 'WEIRDJUMP': return parseNum(stats.wjSync || stats.WJ_sync);
+    case 'LADDERJUMP': return parseNum(stats.lajSync || stats.LAJ_sync);
+    case 'DROPBHOP': return parseNum(stats.dsbjSync || stats.DBJ_sync);
+    case 'LJBLOCK': return parseNum(stats.lbrSync || stats.LJB_sync);
     default: return 0;
   }
 };
@@ -86,47 +101,74 @@ export default function Leaderboard() {
   const [mode, setMode] = useState("HNS"); 
   const [searchTerm, setSearchTerm] = useState("");
   
-  // State-uri pentru HNS / MIX
   const [sortOrder, setSortOrder] = useState("KILLS"); 
   const [sortDirection, setSortDirection] = useState("DESC");
 
-  // State-uri specifice pentru JUMPS
-  const [jumpServer, setJumpServer] = useState("pre"); // "pre" sau "nopre"
+  const [jumpServer, setJumpServer] = useState("pre");
   const [jumpType, setJumpType] = useState("LONGJUMP");
   
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
 
   useEffect(() => {
-    fetch('http://localhost:8080/api/players/all')
-      .then(res => res.json())
-      .then(data => {
-        setPlayers(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Eroare la aducerea jucatorilor:", err);
-        setLoading(false);
+    Promise.all([
+      fetch('http://localhost:8080/api/players/all').then(res => res.json()),
+      fetch('http://localhost:8080/api/jumps/pre').then(res => res.ok ? res.json() : []).catch(() => []),
+      fetch('http://localhost:8080/api/jumps/nopre').then(res => res.ok ? res.json() : []).catch(() => [])
+    ])
+    .then(([playersData, preData, nopreData]) => {
+      const preMap = {};
+      preData.forEach(j => {
+        if (j.steamid) preMap[steamToAccountId(j.steamid)] = j;
       });
+
+      const nopreMap = {};
+      nopreData.forEach(j => {
+        if (j.steamid) nopreMap[steamToAccountId(j.steamid)] = j;
+      });
+
+      const combinedPlayers = playersData.map(p => {
+        const accId = steamToAccountId(p.steamid || p.steamId);
+        return {
+          ...p,
+          jumpStatsPre: p.jumpStatsPre || preMap[accId] || null,
+          jumpStatsNoPre: p.jumpStatsNoPre || nopreMap[accId] || null
+        };
+      });
+
+      setPlayers(combinedPlayers);
+      setLoading(false);
+    })
+    .catch(err => {
+      console.error("Eroare la aducerea datelor:", err);
+      setLoading(false);
+    });
   }, []);
 
+  // 1. Când se schimbă TAB-ul principal (HNS, MIX, JUMPS), resetăm filtrele default
   useEffect(() => {
-    setCurrentPage(1);
     if (mode === "HNS") setSortOrder("KILLS");
     if (mode === "MIX") setSortOrder("ELO");
     if (mode === "JUMPS") setJumpType("LONGJUMP");
-  }, [mode, searchTerm, jumpServer, jumpType]);
+  }, [mode]);
+
+  // 2. Orice acțiune de filtrare sau schimbare (dar NU tab-ul principal) ne trimite la pagina 1
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [mode, searchTerm, sortOrder, sortDirection, jumpServer, jumpType]);
 
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center font-headline text-primary-dim text-2xl animate-pulse tracking-widest uppercase">Loading Database Records...</div>;
 
+  // 1. Filtrare mod
   let baseData = players;
   if (mode === "MIX") {
     baseData = baseData.filter(p => (p.mixgames || p.mixGames || 0) > 0);
   } else if (mode === "JUMPS") {
-    // Arată doar jucătorii care au distanța > 0 la tipul și serverul ales
+    // Arată doar jucătorii care au distanța > 0 la acel jump specific
     baseData = baseData.filter(p => getJumpDistance(p, jumpServer, jumpType) > 0);
   }
 
+  // 2. Sortare completă
   baseData = [...baseData].sort((a, b) => {
     let valA = 0; let valB = 0;
     
@@ -140,7 +182,6 @@ export default function Leaderboard() {
       else if (sortOrder === "DISCONNECTS") { valA = a.mixdisconnects || a.mixDisconnects || 0; valB = b.mixdisconnects || b.mixDisconnects || 0; } 
       else if (sortOrder === "STABS") { valA = a.mixtotalstabs || a.mixTotalStabs || 0; valB = b.mixtotalstabs || b.mixTotalStabs || 0; }
     } else if (mode === "JUMPS") {
-      // Sortare forțată DESCRESCĂTOR (cel mai bun jumper primul)
       valA = getJumpDistance(a, jumpServer, jumpType);
       valB = getJumpDistance(b, jumpServer, jumpType);
       return valB - valA; 
@@ -234,14 +275,14 @@ export default function Leaderboard() {
         <div className="flex bg-surface-container-low border border-white/10 p-1.5 rounded-sm overflow-x-auto">
            <button onClick={() => setMode("HNS")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "HNS" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Public HNS</button>
            <button onClick={() => setMode("MIX")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "MIX" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Competitive Mix</button>
-           <button onClick={() => setMode("JUMPS")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "JUMPS" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Movement</button>
+           <button onClick={() => setMode("JUMPS")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "JUMPS" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Jump Stats</button>
         </div>
       </div>
 
       <div className="bg-surface-container-low/40 border border-white/5 p-4 flex flex-col md:flex-row gap-4 shrink-0">
         <input 
           type="text" 
-          placeholder="SEARCH PLAYER..." 
+          placeholder="SEARCH PLAYER... (name, id or profile link)" 
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="flex-1 bg-surface-container-highest border border-white/10 text-white font-headline text-xs px-4 py-3 focus:outline-none focus:border-primary-dim transition-colors uppercase tracking-widest placeholder:text-gray-600"
@@ -272,13 +313,11 @@ export default function Leaderboard() {
           </>
         ) : (
           <>
-            {/* DROP-DOWN PENTRU SERVER DE SĂRITURI (PRE vs NOPRE) */}
             <select value={jumpServer} onChange={(e) => setJumpServer(e.target.value)} className="bg-surface-container-highest border border-white/10 text-primary-dim font-bold font-headline text-xs px-4 py-3 focus:outline-none focus:border-primary-dim uppercase tracking-widest cursor-pointer">
-              <option value="pre" className="bg-[#121212] text-white">PRE (100AA)</option>
-              <option value="nopre" className="bg-[#121212] text-white">NOPRE (10AA)</option>
+              <option value="pre" className="bg-[#121212] text-white">PRE</option>
+              <option value="nopre" className="bg-[#121212] text-white">NOPRE</option>
             </select>
 
-            {/* DROP-DOWN PENTRU TIPUL SĂRITURII */}
             <select value={jumpType} onChange={(e) => setJumpType(e.target.value)} className="bg-surface-container-highest border border-white/10 text-gray-300 font-headline text-xs px-4 py-3 focus:outline-none focus:border-primary-dim uppercase tracking-widest cursor-pointer min-w-[200px]">
               <option value="LONGJUMP" className="bg-[#121212] text-white">LONGJUMP (LJ)</option>
               <option value="COUNTJUMP" className="bg-[#121212] text-white">COUNTJUMP (CJ)</option>
@@ -297,29 +336,29 @@ export default function Leaderboard() {
           <thead className="bg-surface-container-highest border-b border-white/10 text-gray-400 text-[12px] font-bold uppercase tracking-widest">
             <tr>
               <th className="px-6 py-4 w-16 text-center">#</th>
-              <th className="px-6 py-4">Operator</th>
+              <th className="px-6 py-4">Player</th>
               <th className="px-6 py-4 text-center">Status</th>
               
               {mode === "HNS" && (
                 <>
                   <th className="px-6 py-4 text-center">Total Kills</th>
-                  <th className="px-6 py-4 text-right">Total Time (HRS)</th>
+                  <th className="px-6 py-4 text-right">Total Time</th>
                 </>
               )}
               {mode === "MIX" && (
                 <>
+                  <th className="px-6 py-4 text-center text-primary-dim">Mix Elo</th>
                   <th className="px-6 py-4 text-center">Mix Games</th>
                   <th className="px-6 py-4 text-center">Mix Won</th>
-                  <th className="px-6 py-4 text-center">Disconnects</th>
                   <th className="px-6 py-4 text-center">Stabs</th>
-                  <th className="px-6 py-4 text-right text-primary-dim">Mix Elo</th>
+                  <th className="px-6 py-4 text-right">Disconnects</th>
                 </>
               )}
               {mode === "JUMPS" && (
                 <>
+                  <th className="px-6 py-4 text-center text-primary-dim">Distance</th>
                   <th className="px-6 py-4 text-center">Strafes</th>
-                  <th className="px-6 py-4 text-center">Sync</th>
-                  <th className="px-6 py-4 text-right text-primary-dim">Distance</th>
+                  <th className="px-6 py-4 text-right">Sync</th>
                 </>
               )}
             </tr>
@@ -374,24 +413,24 @@ export default function Leaderboard() {
 
                   {mode === "MIX" && (
                     <>
+                      <td className="px-6 py-5 text-center font-black text-primary-dim text-[18px] drop-shadow-md">{formatNumber(player.mixelo || player.mixElo)}</td>
                       <td className="px-6 py-5 text-center text-gray-300 font-bold">{formatNumber(player.mixgames || player.mixGames)}</td>
                       <td className="px-6 py-5 text-center text-emerald-400 font-bold">{formatNumber(player.mixwon || player.mixWon)}</td>
-                      <td className="px-6 py-5 text-center text-red-500 font-bold">{formatNumber(player.mixdisconnects || player.mixDisconnects)}</td>
                       <td className="px-6 py-5 text-center text-gray-400 font-bold">{formatNumber(player.mixtotalstabs || player.mixTotalStabs)}</td>
-                      <td className="px-6 py-5 text-right font-black text-primary-dim text-[18px] drop-shadow-md">{formatNumber(player.mixelo || player.mixElo)}</td>
+                      <td className="px-6 py-5 text-right text-red-500 font-bold">{formatNumber(player.mixdisconnects || player.mixDisconnects)}</td>
                     </>
                   )}
 
                   {mode === "JUMPS" && (
                     <>
+                      <td className="px-6 py-5 text-center font-black text-primary-dim text-[18px] drop-shadow-md">
+                        {Number(getJumpDistance(player, jumpServer, jumpType)).toFixed(2)} <span className="text-xs text-gray-600 ml-1"></span>
+                      </td>
                       <td className="px-6 py-5 text-center text-gray-300 font-bold">
                         {getJumpStrafes(player, jumpServer, jumpType)}
                       </td>
-                      <td className="px-6 py-5 text-center text-gray-400 font-bold">
+                      <td className="px-6 py-5 text-right text-gray-400 font-bold">
                         {Number(getJumpSync(player, jumpServer, jumpType)).toFixed(2)}%
-                      </td>
-                      <td className="px-6 py-5 text-right font-black text-primary-dim text-[18px] drop-shadow-md">
-                        {Number(getJumpDistance(player, jumpServer, jumpType)).toFixed(2)} <span className="text-xs text-gray-600 ml-1">u</span>
                       </td>
                     </>
                   )}

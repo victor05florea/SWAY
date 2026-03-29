@@ -14,7 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/jumps")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "https://sway.ovh")
 public class JumpStatsController {
 
     @Autowired

@@ -68,11 +68,10 @@ export default function Bans() {
 
   const renderCrimes = (cheater) => {
     const crimes = [];
-    if (cheater.bhophack > 0) crimes.push("Bhop Script");
-    if (cheater.gstrafehack > 0) crimes.push("G-Strafe Hack");
-    if (cheater.strafehack > 0) crimes.push("Strafe Optimizer");
+    if (cheater.bhophack > 0) crimes.push("BhopHack");
+    if (cheater.gstrafehack > 0) crimes.push("GStrafeHack");
+    if (cheater.strafehack > 0) crimes.push("StrafeHack");
     if (cheater.dll > 0) crimes.push("DLL Injection");
-
     if (crimes.length === 0) crimes.push("Manual Ban");
 
     return crimes.map((crime, idx) => (

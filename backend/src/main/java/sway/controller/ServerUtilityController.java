@@ -7,7 +7,7 @@ import sway.repository.ServerUtilityRepository;
 
 import java.util.List;
 
-@CrossOrigin(origins = "http://localhost:5173") // Ca să poată React să citească datele
+@CrossOrigin(origins = "https://sway.ovh") // Ca să poată React să citească datele
 @RestController
 @RequestMapping("/api/servers") // Adresa va fi fix http://localhost:8080/api/servers
 public class ServerUtilityController {

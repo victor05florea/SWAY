@@ -13,7 +13,7 @@ import sway.repository.JumpStatNoPreRepository;
 import java.util.List;
 import java.util.Optional;
 
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "https://sway.ovh")
 @RestController
 @RequestMapping("/api/players")
 public class SwayDataController {

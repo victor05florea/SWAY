@@ -123,16 +123,28 @@ export default function Profile() {
   const formatNumber = (num) => num ? Number(num).toLocaleString('de-DE') : '0';
 
   const getRoles = () => {
+    const roleStr = (player.role || player.status || player.admin || "").toString().toLowerCase();
+    const vipValue = parseInt(player.vip);
     let roles = [];
-    if (player.admin && player.admin !== "0" && player.admin !== "") {
-        roles.push({ name: "ADMIN", style: "bg-primary-dim/10 text-primary-dim border-primary-dim/30" });
+
+    if (roleStr.includes('developer') || roleStr.includes('dev')) {
+        roles.push({ name: "DEVELOPER", style: "bg-red-500/10 text-red-500 border-red-500/30" });
+    } else if (roleStr.includes('head admin')) {
+        roles.push({ name: "HEAD ADMIN", style: "bg-orange-500/10 text-orange-400 border-orange-500/30" });
+    } else if (roleStr.includes('admin') || roleStr === "1") {
+        roles.push({ name: "ADMIN", style: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" });
     }
-    if (player.vip && player.vip > 0) {
+
+    if (vipValue === 2) {
+        roles.push({ name: "VIP LIFETIME", style: "bg-yellow-500/10 text-yellow-500 border-yellow-500/30" });
+    } else if (vipValue > 2) {
+        const expiryDate = new Date(vipValue * 1000);
+        const dateString = expiryDate.toLocaleDateString('ro-RO');
+        roles.push({ name: `VIP UNTIL: ${dateString}`, style: "bg-yellow-500/10 text-yellow-500 border-yellow-500/30" });
+    } else if (vipValue === 1) {
         roles.push({ name: "VIP", style: "bg-yellow-500/10 text-yellow-500 border-yellow-500/30" });
     }
-    if (roles.length === 0) {
-        roles.push({ name: "PLAYER", style: "bg-white/5 text-gray-400 border-white/10" });
-    }
+
     return roles;
   };
 
@@ -210,14 +222,18 @@ export default function Profile() {
             <div className="relative w-48 h-48 bg-surface-container-highest overflow-hidden border-2 border-primary-dim/20 shadow-[0_0_15px_rgba(233,0,54,0.15)] shrink-0">
                <img src={player.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${player.name}&backgroundType=gradientLinear&backgroundColor=0e0e0e,ff003c`} alt="Avatar" className="w-full h-full object-cover" />
             </div>
-            <div className="flex-1 text-center md:text-left space-y-2">
+            <div className="flex-1 text-center md:text-left space-y-2 min-w-0">
               <div className="flex items-center justify-center md:justify-start gap-3">
-                 <span className="font-headline text-5xl md:text-7xl font-black tracking-tighter text-white uppercase leading-none">{player.name}</span>
+                 <span title={player.name} className="font-headline text-5xl md:text-7xl font-black tracking-tighter text-white uppercase leading-none truncate max-w-full">
+                    {player.name}
+                 </span>
+                 
                  {player.country && player.country.toLowerCase() !== 'un' && (
                     <img 
-                      src={`https://community.fastly.steamstatic.com/public/images/countryflags/${player.country.toLowerCase()}.gif`} 
+                      src={`/countryflags/${player.country.toLowerCase()}.gif`} 
                       alt={player.country} 
-                      className="w-6 h-auto rounded-[2px] shadow-sm mb-1 opacity-90"
+                      className="w-8 h-auto rounded-[2px] shadow-sm mb-1 opacity-90 shrink-0"
+                      onError={(e) => { e.target.style.display = 'none'; }}
                     />
                  )}
               </div>

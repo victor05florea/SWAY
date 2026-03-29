@@ -19,8 +19,12 @@ export default function Home() {
         .then(data => {
           setTotalPlayers(data.length);
           if (data && data.length > 0) {
-            // Aflăm cel mai bun jucător al săptămânii
+            const sortedByHns = [...data].sort((a, b) => (b.kills || 0) - (a.kills || 0));
             const topPlayer = [...data].sort((a, b) => (b.weektime || 0) - (a.weektime || 0))[0];
+            const pId = String(topPlayer.steamid || topPlayer.steamId).toLowerCase();
+            const realRankIndex = sortedByHns.findIndex(p => String(p.steamid || p.steamId).toLowerCase() === pId);
+            
+            topPlayer.realHnsRank = realRankIndex !== -1 ? realRankIndex + 1 : "Unranked";
             setPotw(topPlayer);
           }
         })
@@ -136,23 +140,26 @@ export default function Home() {
         <span>{title}</span>
         <span className="opacity-60">{players.length}</span>
       </div>
-      <div className="space-y-1.5 max-h-[100px] overflow-y-auto pr-1.5 custom-scrollbar">
+      
+      <div className="space-y-1.5 flex flex-col">
         {players.length > 0 ? players.map((player, index) => (
-          <div key={index} className="flex items-center gap-2 group/player" title={`SteamID: ${player.id}`}>
+          
+          <Link key={index} to={`/profile/${player.id}`} className="flex items-center gap-2 group/player" title={`View Profile: ${player.name}`}>
             {player.flag === 'un' || !player.flag ? (
                <span className="text-[10px] opacity-50 font-mono min-w-[16px] text-center">--</span>
             ) : (
                <img 
-                 src={`https://community.fastly.steamstatic.com/public/images/countryflags/${player.flag}.gif`} 
+                 src={`/countryflags/${player.flag}.gif`} 
                  alt={player.flag}
                  className="w-4 h-[11px] object-cover rounded-[1px] opacity-70 group-hover/player:opacity-100 transition-opacity flex-shrink-0"
                  onError={(e) => { e.target.style.display = 'none'; }}
                />
             )}
-            <span className="text-[11px] text-zinc-300 group-hover/player:text-white transition-colors truncate font-medium">
+            <span className="text-[11px] text-zinc-300 group-hover/player:text-primary-dim transition-colors truncate font-medium">
               {player.name}
             </span>
-          </div>
+          </Link>
+
         )) : (
           <span className="text-[10px] text-zinc-600 italic">No players</span>
         )}
@@ -272,8 +279,7 @@ export default function Home() {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[9px] uppercase tracking-widest text-zinc-500">Rank</span>
-                  <span className="text-lg font-bold text-emerald-400 font-mono drop-shadow-sm">#{potw.serverRank || potw.rank || "1"}</span>
-                </div>
+                  <span className="text-lg font-bold text-emerald-400 font-mono drop-shadow-sm">#{potw.realHnsRank}</span>                </div>
               </div>
             </div>
           </section>

@@ -1,10 +1,44 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 
 import Home from './pages/Home';
 import Leaderboard from './pages/Leaderboard';
 import Bans from './pages/Bans'; 
 import Profile from './pages/Profile';
+
+// --- COMPONENTA NOUĂ PENTRU FUNDAL ALEATORIU ---
+function BackgroundSlider() {
+  const hartiOriginale = [
+    '/harti/mirage.jpg', // Asigură-te că pui aici numele reale ale pozelor tale din folderul public
+    '/harti/inferno.jpg',
+    '/harti/dust2.jpg',
+    '/harti/nuke.jpg'
+  ];
+  
+  const [harti, setHarti] = useState([]);
+
+  useEffect(() => {
+    // Amestecăm hărțile aleatoriu la prima încărcare
+    const hartiAmestecate = [...hartiOriginale].sort(() => 0.5 - Math.random());
+    setHarti(hartiAmestecate);
+  }, []);
+
+  // Dacă nu s-au încărcat încă, nu afișăm nimic
+  if (harti.length === 0) return null;
+
+  return (
+    <div className="fixed inset-0 z-[-1] overflow-hidden bg-black">
+      {/* Setăm doar prima imagine din array-ul amestecat ca fundal */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center opacity-30 transition-opacity duration-1000"
+        style={{ backgroundImage: `url(${harti[0]})` }}
+      />
+      {/* Un mic overlay întunecat pentru a face textul lizibil */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-black/90" />
+    </div>
+  );
+}
+// ----------------------------------------------
 
 function Navigation() {
   const location = useLocation();
@@ -40,14 +74,20 @@ function Navigation() {
             <span className={`absolute bottom-0 left-0 w-full h-[2px] bg-primary-dim transition-transform duration-300 origin-left ${isActive('/demos') ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`}></span>
           </Link>
           
-          <a href="#" target="_blank" rel="noreferrer" className="relative font-headline tracking-tighter uppercase py-1 group transition-all duration-300 text-gray-500 hover:text-white hover:drop-shadow-[0_0_8px_rgba(88,101,242,0.5)]">
+          {/* BUTOANE SOCIALE FIXATE ȘI YOUTUBE ADĂUGAT */}
+          <a href="https://discord.gg/eWMUKGB" target="_blank" rel="noreferrer" className="relative font-headline tracking-tighter uppercase py-1 group transition-all duration-300 text-gray-500 hover:text-white hover:drop-shadow-[0_0_8px_rgba(88,101,242,0.5)]">
             Discord
             <span className="absolute bottom-0 left-0 w-full h-[2px] bg-[#5865F2] transition-transform duration-300 origin-left scale-x-0 group-hover:scale-x-100"></span>
           </a>
 
-          <a href="https://steamcommunity.com/groups/swayro" target="_blank" rel="noreferrer" className="relative font-headline tracking-tighter uppercase py-1 group transition-all duration-300 text-gray-500 hover:text-white hover:drop-shadow-[0_0_8px_rgba(102,192,244,0.5)]">
+          <a href="https://steamcommunity.com/groups/swayhns" target="_blank" rel="noreferrer" className="relative font-headline tracking-tighter uppercase py-1 group transition-all duration-300 text-gray-500 hover:text-white hover:drop-shadow-[0_0_8px_rgba(102,192,244,0.5)]">
             Steam Group
             <span className="absolute bottom-0 left-0 w-full h-[2px] bg-[#66c0f4] transition-transform duration-300 origin-left scale-x-0 group-hover:scale-x-100"></span>
+          </a>
+
+          <a href="https://www.youtube.com/@cra5h1337" target="_blank" rel="noreferrer" className="relative font-headline tracking-tighter uppercase py-1 group transition-all duration-300 text-gray-500 hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,0,0,0.5)]">
+            Youtube
+            <span className="absolute bottom-0 left-0 w-full h-[2px] bg-[#FF0000] transition-transform duration-300 origin-left scale-x-0 group-hover:scale-x-100"></span>
           </a>
 
         </div>
@@ -59,7 +99,7 @@ function Navigation() {
 
 function App() {
   
-  // LOGICĂ SCROLLBAR: APARE INSTANT LA HOVER PE MARGINE SAU LA SCROLL
+  // LOGICĂ SCROLLBAR (rămasă exact cum ai făcut-o tu)
   useEffect(() => {
     let scrollTimeout;
     let isHoveringEdge = false;
@@ -69,25 +109,21 @@ function App() {
       resetTimer();
     };
 
-    // Funcția care ascultă mouse-ul
     const handleMouseMove = (e) => {
-      // Dacă mouse-ul se află în ultimii 30 de pixeli din dreapta ecranului
       if (e.clientX >= window.innerWidth - 30) {
         isHoveringEdge = true;
-        document.documentElement.classList.add('is-scrolling'); // Îl facem vizibil instant
-        clearTimeout(scrollTimeout); // Oprim orice timer de dispariție
+        document.documentElement.classList.add('is-scrolling');
+        clearTimeout(scrollTimeout);
       } else {
-        // Dacă plecăm de pe margine
         if (isHoveringEdge) {
           isHoveringEdge = false;
-          resetTimer(); // Pornim timer-ul de ascundere
+          resetTimer();
         }
       }
     };
 
     const resetTimer = () => {
       clearTimeout(scrollTimeout);
-      // Dispariție după 600ms de inactivitate a scroll-ului, cu condiția să nu fim cu mouse-ul pe margine
       if (!isHoveringEdge) {
         scrollTimeout = setTimeout(() => {
           document.documentElement.classList.remove('is-scrolling');
@@ -111,33 +147,15 @@ function App() {
         
         {/* CSS GLOBAL PENTRU SCROLLBAR */}
         <style>{`
-          html ::-webkit-scrollbar {
-            width: 6px;
-            background: transparent;
-          }
-          
-          html ::-webkit-scrollbar-track {
-            background: transparent;
-          }
-          
-          /* INVIZIBIL - Starea normală */
-          html ::-webkit-scrollbar-thumb {
-            background: rgba(233, 0, 54, 0); 
-            border-radius: 6px;
-            transition: background-color 0.4s ease-out;
-          }
-
-          /* VIZIBIL - La scroll SAU la hover pe zona din dreapta */
-          html.is-scrolling ::-webkit-scrollbar-thumb {
-            background: rgba(233, 0, 54, 0.6);
-          }
-          
-          /* ROȘU APRINS - Când chiar pui mouse-ul pe bară */
-          html.is-scrolling ::-webkit-scrollbar-thumb:hover {
-            background: rgba(233, 0, 54, 1);
-          }
+          html ::-webkit-scrollbar { width: 6px; background: transparent; }
+          html ::-webkit-scrollbar-track { background: transparent; }
+          html ::-webkit-scrollbar-thumb { background: rgba(233, 0, 54, 0); border-radius: 6px; transition: background-color 0.4s ease-out; }
+          html.is-scrolling ::-webkit-scrollbar-thumb { background: rgba(233, 0, 54, 0.6); }
+          html.is-scrolling ::-webkit-scrollbar-thumb:hover { background: rgba(233, 0, 54, 1); }
         `}</style>
 
+        {/* COMPONENTELE PENTRU FUNDAL */}
+        <BackgroundSlider />
         <div className="fixed inset-0 grid-pattern pointer-events-none z-0"></div>
 
         <Navigation />

@@ -8,7 +8,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/cheaters")
-@CrossOrigin(origins="*")
+@CrossOrigin(origins = "https://sway.ovh")
 public class CheaterController {
 
     private final CheaterRepository cheaterRepository;

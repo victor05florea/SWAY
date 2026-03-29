@@ -6,39 +6,55 @@ import Leaderboard from './pages/Leaderboard';
 import Bans from './pages/Bans'; 
 import Profile from './pages/Profile';
 
-// --- COMPONENTA NOUĂ PENTRU FUNDAL ALEATORIU ---
 function BackgroundSlider() {
-  const hartiOriginale = [
-    '/harti/mirage.jpg', // Asigură-te că pui aici numele reale ale pozelor tale din folderul public
-    '/harti/inferno.jpg',
-    '/harti/dust2.jpg',
-    '/harti/nuke.jpg'
-  ];
-  
-  const [harti, setHarti] = useState([]);
+  const [images] = React.useState(() => {
+    const slideshowImages = [
+      "fj_mansion.webp", "hns_avenue.webp", "hns_backalot.webp", "hns_devblocks_remake.webp", "hns_freeway.webp", "hns_mini_bbcity.webp", "hns_mini_floppy.webp", "hns_mini_jukecity.webp", "hns_mini_rooftops.webp", "hns_rooftops_remake.webp", "hns_mini_tyo.webp", "hns_trickpark.webp", "hns_boost_bbcity.webp", "hns_skyline.webp", "hns_boost_dust2.webp", "hns_boost_qube.webp", "hns_boost_mafia.webp", "hns_boost_jukecity.webp", "hns_oilrig.webp", "hns_miami.webp", "hns_half.webp", "hns_sunset.webp", "hns_rooftops.webp", "hns_rooftops_v5.webp", "hns_virtual.webp", "hns_iceskating.webp", "hns_jhard.webp", "hns_zen.webp", "hns_ruins.webp", "hns_liberation.webp", "hns_kitty_pro.webp", "hns_funk.webp", "hns_flowtown.webp", "hns_floppytown.webp", "hns_esip.webp", "hns_brickworld.webp", "hns_bakgard.webp", "hns_assault_inside.webp", "hns_jukecity.webp", "hns_devblocks.webp", "hns_tyo.webp", "hns_bbcity.webp"
+    ];
+    
+    const shuffled = [...slideshowImages];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  });
 
-  useEffect(() => {
-    // Amestecăm hărțile aleatoriu la prima încărcare
-    const hartiAmestecate = [...hartiOriginale].sort(() => 0.5 - Math.random());
-    setHarti(hartiAmestecate);
-  }, []);
-
-  // Dacă nu s-au încărcat încă, nu afișăm nimic
-  if (harti.length === 0) return null;
+  if (images.length === 0) return null;
 
   return (
-    <div className="fixed inset-0 z-[-1] overflow-hidden bg-black">
-      {/* Setăm doar prima imagine din array-ul amestecat ca fundal */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center opacity-30 transition-opacity duration-1000"
-        style={{ backgroundImage: `url(${harti[0]})` }}
-      />
-      {/* Un mic overlay întunecat pentru a face textul lizibil */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-black/90" />
-    </div>
+    <>
+      <style>{`
+        @keyframes slideshow {
+            0% { opacity: 0; transform: scale(1.1); }
+            4% { opacity: 1; }
+            21% { opacity: 1; }
+            25% { opacity: 0; transform: scale(1); }
+            100% { opacity: 0; }
+        }
+        .slideshow-container { position: fixed; inset: 0; z-index: -10; background: #0a0a0c; overflow: hidden; }
+        .slide { 
+            position: absolute; inset: 0; background-size: cover; background-position: center; 
+            opacity: 0; animation: slideshow 60s linear infinite; 
+            filter: brightness(0.15) blur(4px) saturate(0.5);
+        }
+      `}</style>
+      <div className="slideshow-container">
+        {images.map((img, index) => (
+          <div 
+            key={img}
+            className="slide" 
+            style={{ 
+              backgroundImage: `url(/images/${img})`, 
+              animationDelay: `${index * 5}s`,
+              animationDuration: `${images.length * 1}s` 
+            }}
+          />
+        ))}
+      </div>
+    </>
   );
 }
-// ----------------------------------------------
 
 function Navigation() {
   const location = useLocation();
@@ -99,7 +115,7 @@ function Navigation() {
 
 function App() {
   
-  // LOGICĂ SCROLLBAR (rămasă exact cum ai făcut-o tu)
+  // LOGICĂ SCROLLBAR
   useEffect(() => {
     let scrollTimeout;
     let isHoveringEdge = false;
@@ -145,7 +161,6 @@ function App() {
     <Router>
       <div className="min-h-screen relative font-body selection:bg-primary-dim selection:text-white flex flex-col">
         
-        {/* CSS GLOBAL PENTRU SCROLLBAR */}
         <style>{`
           html ::-webkit-scrollbar { width: 6px; background: transparent; }
           html ::-webkit-scrollbar-track { background: transparent; }
@@ -154,7 +169,7 @@ function App() {
           html.is-scrolling ::-webkit-scrollbar-thumb:hover { background: rgba(233, 0, 54, 1); }
         `}</style>
 
-        {/* COMPONENTELE PENTRU FUNDAL */}
+        {/* FUNDAL ANIMAT - Acum rulează pe toată aplicația */}
         <BackgroundSlider />
         <div className="fixed inset-0 grid-pattern pointer-events-none z-0"></div>
 

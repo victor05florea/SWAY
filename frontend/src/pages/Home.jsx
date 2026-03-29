@@ -9,26 +9,25 @@ export default function Home() {
   const [copiedServer, setCopiedServer] = useState(null);
 
   const slideshowImages = [
-    "fj_mansion.png", "hns_avenue.jpg", "hns_backalot.jpg", "hns_devblocks_remake.jpg", "hns_freeway.jpg", "hns_mini_bbcity.jpg", "hns_mini_floppy.jpg", "hns_mini_jukecity.jpg", "hns_mini_rooftops.jpg", "hns_rooftops_remake.jpg", "hns_mini_tyo.jpg", "hns_trickpark.jpg", "hns_boost_bbcity.jpg", "hns_skyline.jpg", "hns_boost_dust2.jpg", "hns_boost_qube.jpg", "hns_boost_mafia.jpg", "hns_boost_jukecity.jpg", "hns_oilrig.jpg", "hns_miami.jpg", "hns_half.jpg", "hns_sunset.jpg", "hns_rooftops.jpg", "hns_rooftops_v5.jpg", "hns_virtual.jpg", "hns_iceskating.jpg", "hns_jhard.jpg", "hns_zen.jpg", "hns_ruins.jpg", "hns_liberation.jpg", "hns_kitty_pro.jpg", "hns_funk.jpg", "hns_flowtown.jpg", "hns_floppytown.jpg", "hns_esip.jpg", "hns_brickworld.jpg", "hns_bakgard.jpg", "hns_assault_inside.jpg", "hns_jukecity.jpg", "hns_devblocks.jpg", "hns_tyo.jpg", "hns_bbcity.jpg"
+    "fj_mansion.webp", "hns_avenue.webp", "hns_backalot.webp", "hns_devblocks_remake.webp", "hns_freeway.webp", "hns_mini_bbcity.webp", "hns_mini_floppy.webp", "hns_mini_jukecity.webp", "hns_mini_rooftops.webp", "hns_rooftops_remake.webp", "hns_mini_tyo.webp", "hns_trickpark.webp", "hns_boost_bbcity.webp", "hns_skyline.webp", "hns_boost_dust2.webp", "hns_boost_qube.webp", "hns_boost_mafia.webp", "hns_boost_jukecity.webp", "hns_oilrig.webp", "hns_miami.webp", "hns_half.webp", "hns_sunset.webp", "hns_rooftops.webp", "hns_rooftops_v5.webp", "hns_virtual.webp", "hns_iceskating.webp", "hns_jhard.webp", "hns_zen.webp", "hns_ruins.webp", "hns_liberation.webp", "hns_kitty_pro.webp", "hns_funk.webp", "hns_flowtown.webp", "hns_floppytown.webp", "hns_esip.webp", "hns_brickworld.webp", "hns_bakgard.webp", "hns_assault_inside.webp", "hns_jukecity.webp", "hns_devblocks.webp", "hns_tyo.webp", "hns_bbcity.webp"
   ];
 
   useEffect(() => {
     const fetchPlayers = () => {
-      fetch("/api/players/all")
-        .then(res => res.json())
-        .then(data => {
-          setTotalPlayers(data.length);
-          if (data && data.length > 0) {
-            const sortedByHns = [...data].sort((a, b) => (b.kills || 0) - (a.kills || 0));
-            const topPlayer = [...data].sort((a, b) => (b.weektime || 0) - (a.weektime || 0))[0];
-            const pId = String(topPlayer.steamid || topPlayer.steamId).toLowerCase();
-            const realRankIndex = sortedByHns.findIndex(p => String(p.steamid || p.steamId).toLowerCase() === pId);
-            
-            topPlayer.realHnsRank = realRankIndex !== -1 ? realRankIndex + 1 : "Unranked";
-            setPotw(topPlayer);
-          }
-        })
+      fetch("/api/players/count")
+        .then(res => res.text()) // Folosim text() pentru a nu pica la un număr simplu
+        .then(text => setTotalPlayers(parseInt(text) || 0))
         .catch(err => console.error("Error fetching total players:", err));
+
+      fetch("/api/players/potw")
+        .then(res => {
+            if (!res.ok) throw new Error("POTW not found");
+            return res.json();
+        })
+        .then(data => {
+            setPotw(data);
+        })
+        .catch(err => console.error("Error fetching POTW:", err));
     };
 
     const fetchServers = () => {
@@ -41,7 +40,6 @@ export default function Home() {
     fetchPlayers();
     fetchServers();
 
-
     const playersInterval = setInterval(fetchPlayers, 30000);
     const serversInterval = setInterval(fetchServers, 10000);
 
@@ -53,8 +51,8 @@ export default function Home() {
 
   const categorizeMaps = (maps) => {
     const categories = {
-      boost: { title: "Boost / Teamplay", maps: [] },
-      mini: { title: "Mini Maps (1v1 / 2v2)", maps: [] },
+      boost: { title: "Boost Maps", maps: [] },
+      mini: { title: "Mini Maps", maps: [] },
       fj: { title: "Funjump", maps: [] },
       holiday: { title: "Holiday Maps", maps: [] },
       classic: { title: "Classic Hide'N'Seek", maps: [] }
@@ -99,6 +97,34 @@ export default function Home() {
     return `${h}h ${m}m`;
   };
 
+const steam64ToSteam32 = (steam64) => {
+    if (!steam64) return "";
+    const str = steam64.trim();
+    // Dacă e Steam64 (17 cifre), îl transformăm în Steam32
+    if (/^\d{17}$/.test(str)) {
+       try {
+         const id64 = BigInt(str);
+         const base = BigInt("76561197960265728");
+         const accountId = id64 - base;
+         const y = accountId % BigInt(2);
+         const z = accountId / BigInt(2);
+         return `STEAM_1:${y}:${z}`;
+       } catch(e) { return str; }
+    }
+    // Dacă e deja STEAM_1... sau altceva, îl lăsăm așa
+    return str; 
+  };
+
+  // 2. Funcția care repară caracterele speciale din nume (UTF-8 Decode)
+  const fixEncoding = (str) => {
+    if (!str) return "";
+    try {
+      return decodeURIComponent(escape(str));
+    } catch (e) {
+      return str;
+    }
+  };
+
   const parsePlayerList = (rawString) => {
     if (!rawString || rawString.trim() === "") return [];
     return rawString.split(';')
@@ -107,14 +133,15 @@ export default function Home() {
         const [countryCode, playerName, steamId] = playerStr.split('|');
         return {
           flag: countryCode ? countryCode.toLowerCase() : 'un',
-          name: playerName || 'Unknown',
-          id: steamId
+          name: fixEncoding(playerName) || 'Unknown',
+          id: steam64ToSteam32(steamId)
         };
       });
   };
 
   const getRoleBadge = (player) => {
     const roleStr = (player.role || player.status || player.rankName || "").toLowerCase();
+    const vipValue = parseInt(player.vip) || 0;
     
     if (roleStr.includes('developer') || roleStr.includes('dev')) {
       return <span className="text-[9px] font-bold uppercase tracking-widest text-red-500 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]">Developer</span>;
@@ -128,9 +155,15 @@ export default function Home() {
     if (roleStr.includes('helper')) {
       return <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20 shadow-[0_0_10px_rgba(59,130,246,0.1)]">Helper</span>;
     }
-    if (roleStr.includes('vip')) {
-      return <span className="text-[9px] font-bold uppercase tracking-widest text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded border border-yellow-400/20 shadow-[0_0_10px_rgba(250,204,21,0.1)]">VIP</span>;
+    
+    if (vipValue === 2) {
+      return <span className="text-[9px] font-bold uppercase tracking-widest text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded border border-yellow-400/20 shadow-[0_0_10px_rgba(250,204,21,0.1)]">VIP Lifetime</span>;
+    } else if (vipValue > 2) {
+      const expiryDate = new Date(vipValue * 1000);
+      const dateString = expiryDate.toLocaleDateString('ro-RO');
+      return <span className="text-[9px] font-bold uppercase tracking-widest text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded border border-yellow-400/20 shadow-[0_0_10px_rgba(250,204,21,0.1)]">VIP Until: {dateString}</span>;
     }
+    
     return null;
   };
 
@@ -151,6 +184,7 @@ export default function Home() {
                <img 
                  src={`/countryflags/${player.flag}.gif`} 
                  alt={player.flag}
+                 loading="lazy"
                  className="w-4 h-[11px] object-cover rounded-[1px] opacity-70 group-hover/player:opacity-100 transition-opacity flex-shrink-0"
                  onError={(e) => { e.target.style.display = 'none'; }}
                />
@@ -171,19 +205,6 @@ export default function Home() {
     <div className="relative max-w-7xl mx-auto px-4 md:px-8 animate-fade-in overflow-hidden">
       
       <style>{`
-        @keyframes slideshow {
-            0% { opacity: 0; transform: scale(1.1); }
-            4% { opacity: 1; }
-            21% { opacity: 1; }
-            25% { opacity: 0; transform: scale(1); }
-            100% { opacity: 0; }
-        }
-        .slideshow-container { position: fixed; inset: 0; z-index: -10; background: #0a0a0c; overflow: hidden; }
-        .slide { 
-            position: absolute; inset: 0; background-size: cover; background-position: center; 
-            opacity: 0; animation: slideshow 60s linear infinite; 
-            filter: brightness(0.15) blur(4px) saturate(0.5);
-        }
         .scanlines {
             position: fixed; inset: 0; z-index: 50; pointer-events: none;
             background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.05) 51%);
@@ -192,25 +213,11 @@ export default function Home() {
         }
         .custom-scrollbar::-webkit-scrollbar { width: 3px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.01); }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(233, 0, 54, 0.2); rounded: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(233, 0, 54, 0.2); border-radius: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(233, 0, 54, 0.4); }
       `}</style>
 
       <div className="scanlines"></div>
-
-      <div className="slideshow-container">
-        {slideshowImages.map((img, index) => (
-          <div 
-            key={index} 
-            className="slide" 
-            style={{ 
-              backgroundImage: `url(/images/${img})`, 
-              animationDelay: `${index * 5}s`,
-              animationDuration: `${slideshowImages.length * 1}s` 
-            }}
-          />
-        ))}
-      </div>
 
       <section className="mb-14 pt-10 flex flex-col items-center relative z-10 text-center">
         <div className="flex font-headline font-black tracking-tighter leading-none select-none gap-4 md:gap-6 group justify-center">
@@ -228,13 +235,7 @@ export default function Home() {
             );
           })}
         </div>
-
-        <div className="mt-12 relative group max-w-2xl mx-auto flex flex-col items-center">
-          <p className="text-gray-300 font-headline font-medium text-xl leading-relaxed tracking-wide italic">
-            "We are like a bunker! We got everything you need."
-          </p>
-          <div className="h-[2px] w-12 bg-primary-dim/40 rounded-full mt-4 transition-all duration-500 group-hover:w-24 group-hover:bg-primary-dim"></div>
-        </div>
+        {/* Sloganul a fost scos complet de aici */}
       </section>
 
       {potw && (() => {
@@ -247,6 +248,7 @@ export default function Home() {
                   <img 
                     src={potw.avatarUrl || potw.avatarurl || "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"} 
                     alt={potw.name}
+                    loading="lazy"
                     className="w-14 h-14 md:w-16 md:h-16 rounded-xl object-cover border-2 border-primary-dim/30 shadow-[0_0_15px_rgba(233,0,54,0.2)] transition-transform duration-300 group-hover/avatar:scale-105 group-hover/avatar:border-primary-dim"
                     onError={(e) => { e.target.src = "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg" }}
                   />
@@ -256,8 +258,9 @@ export default function Home() {
                   <div className="flex items-center gap-2.5">
                     {potwFlag !== 'un' && (
                       <img 
-                        src={`https://community.fastly.steamstatic.com/public/images/countryflags/${potwFlag}.gif`} 
+                        src={`/countryflags/${potwFlag}.gif`} 
                         alt={potwFlag}
+                        loading="lazy"
                         className="w-5 shadow-sm rounded-[2px]"
                         onError={(e) => { e.target.style.display = 'none'; }}
                       />
@@ -279,7 +282,8 @@ export default function Home() {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[9px] uppercase tracking-widest text-zinc-500">Rank</span>
-                  <span className="text-lg font-bold text-emerald-400 font-mono drop-shadow-sm">#{potw.realHnsRank}</span>                </div>
+                  <span className="text-lg font-bold text-emerald-400 font-mono drop-shadow-sm">#{potw.realHnsRank || potw.serverRank}</span>
+                </div>
               </div>
             </div>
           </section>
@@ -298,7 +302,7 @@ export default function Home() {
           const counterTerrorists = parsePlayerList(sData.counterterrorists);
           const spectators = parsePlayerList(sData.spectators);
           const funjumpers = parsePlayerList(sData.funjumpers);
-          const mapImageUrl = `/images/${currentMap}.jpg`; 
+          const mapImageUrl = `/images/${currentMap}.webp`; 
 
           return (
             <div key={sId} className="group relative bg-surface-container-low border border-white/5 rounded-2xl overflow-hidden transition-all duration-500 hover:border-primary-dim/20 hover:shadow-[0_0_40px_rgba(233,0,54,0.1)] hover:-translate-y-1.5 flex flex-col">
@@ -307,10 +311,11 @@ export default function Home() {
                 <img 
                   src={mapImageUrl} 
                   alt={`Map: ${currentMap}`}
+                  loading="lazy"
                   className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                   onError={(e) => {
                     e.target.onerror = null; 
-                    e.target.src = '/images/hns_backalot.jpg'; 
+                    e.target.src = '/images/hns_backalot.webp'; 
                     e.target.style.filter = 'brightness(0.5) blur(2px)';
                   }}
                 />
@@ -332,7 +337,7 @@ export default function Home() {
                 <div className="flex flex-col gap-4">
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 group-hover:text-primary-dim transition-colors">
-                      {sId === 3 ? 'Players' : 'Players'}
+                      Players
                     </span>
                     <div className="text-right flex flex-col items-end">
                       <span className="text-3xl font-black font-headline text-white drop-shadow-md">{sData.players}<span className="text-zinc-600">/{sData.maxplayers}</span></span>
@@ -454,10 +459,11 @@ export default function Home() {
                               <img 
                                 src={`/images/${mapName}`} 
                                 alt={cleanName}
+                                loading="lazy"
                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                 onError={(e) => {
                                   e.target.onerror = null; 
-                                  e.target.src = '/images/hns_backalot.jpg'; 
+                                  e.target.src = '/images/hns_backalot.webp'; 
                                   e.target.style.filter = 'brightness(0.5) blur(2px)';
                                 }}
                               />

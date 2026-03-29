@@ -222,7 +222,7 @@ export default function Leaderboard() {
 
   const getRoleBadges = (player) => {
     const roleStr = (player.role || player.status || player.admin || "").toString().toLowerCase();
-    const vipValue = parseInt(player.vip);
+    const vipValue = parseInt(player.vip) || 0; // Fallback la 0 dacă nu există
     
     let badges = [];
     
@@ -231,28 +231,12 @@ export default function Leaderboard() {
     else if (roleStr.includes('admin') || roleStr === "1") badges.push(<span key="admin" className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-1 font-bold uppercase tracking-widest">Admin</span>);
 
     if (vipValue === 2) {
-      badges.push(
-        <span key="vip-life" className="text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-1 font-bold uppercase tracking-widest">
-          VIP Lifetime
-        </span>
-      );
+      badges.push(<span key="vip-life" className="text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-1 font-bold uppercase tracking-widest">VIP Lifetime</span>);
     } else if (vipValue > 2) {
       const expiryDate = new Date(vipValue * 1000);
-      const dateString = expiryDate.toLocaleDateString('ro-RO'); // Afișează formatul ZZ.LL.AAAA
-      
-      badges.push(
-        <span key="vip-until" className="text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-1 font-bold uppercase tracking-widest">
-          VIP Until: {dateString}
-        </span>
-      );
-    } else if (vipValue === 1) {
-      badges.push(
-        <span key="vip" className="text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-1 font-bold uppercase tracking-widest">
-          VIP
-        </span>
-      );
+      const dateString = expiryDate.toLocaleDateString('ro-RO');
+      badges.push(<span key="vip-until" className="text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-1 font-bold uppercase tracking-widest">VIP Until: {dateString}</span>);
     }
-
     if (badges.length === 0) return null;
     return <div className="flex flex-wrap justify-center gap-1">{badges}</div>;
   };
@@ -298,7 +282,7 @@ export default function Leaderboard() {
         <div className="flex bg-surface-container-low border border-white/10 p-1.5 rounded-sm overflow-x-auto">
            <button onClick={() => setMode("HNS")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "HNS" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Public HNS</button>
            <button onClick={() => setMode("MIX")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "MIX" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Competitive Mix</button>
-           <button onClick={() => setMode("JUMPS")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "JUMPS" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Movement Records</button>
+           <button onClick={() => setMode("JUMPS")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "JUMPS" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Jump Stats</button>
         </div>
       </div>
 
@@ -406,7 +390,7 @@ export default function Leaderboard() {
                   <td className="px-6 py-5">
                     <Link to={`/profile/${player.steamid || player.steamId}`} className="flex items-center gap-4 cursor-pointer">
                       {player.country && player.country.length > 0 && player.country !== 'un' ? (
-                        <img src={`/countryflags/${player.country.toLowerCase()}.gif`} alt={player.country} className="w-[24px] h-[18px] shadow-[0_0_5px_rgba(0,0,0,0.5)] opacity-90 group-hover:opacity-100 transition-opacity" onError={(e) => { e.target.style.display = 'none'; }} />
+                        <img src={`/countryflags/${player.country.toLowerCase()}.gif`} alt={player.country} loading="lazy" className="w-[24px] h-[18px] shadow-[0_0_5px_rgba(0,0,0,0.5)] opacity-90 group-hover:opacity-100 transition-opacity" onError={(e) => { e.target.style.display = 'none'; }} />
                       ) : (
                         <span className="text-[10px] text-gray-600 uppercase border border-white/5 px-1 bg-white/5">UNK</span>
                       )}
@@ -414,6 +398,7 @@ export default function Leaderboard() {
                       <img 
                         src={validAvatar} 
                         alt="avatar" 
+                        loading="lazy"
                         className="w-10 h-10 object-cover border border-white/10 group-hover:border-primary-dim transition-colors"
                         onError={(e) => { 
                           e.target.onerror = null; 

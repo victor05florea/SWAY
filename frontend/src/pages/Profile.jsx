@@ -9,17 +9,9 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [jumpMode, setJumpMode] = useState("PRE");
-  
-  // State nou pentru a păstra rank-ul calculat
   const [mixRank, setMixRank] = useState("UNRANKED");
 
-  // Înghețăm scroll-ul paginii principale (dar păstrăm scroll în interiorul profilului)
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = 'auto'; };
-  }, []);
 
-  // Modificat pentru DEPLOY (Rute Relative și Fals Real-Time / Polling)
   useEffect(() => {
     if (!id || id === "undefined") {
       setLoading(false);
@@ -27,42 +19,24 @@ export default function Profile() {
     }
 
     const fetchProfileData = () => {
-      // Aducem simultan datele jucătorului curent ȘI lista tuturor jucătorilor pentru calcularea rank-ului
       Promise.all([
         fetch(`/api/players/${id}`).then(res => {
           if (!res.ok) throw new Error("Jucătorul nu a fost găsit în baza de date.");
           return res.json();
         }),
-        fetch(`/api/players/all`).then(res => res.json()).catch(() => [])
+        // Aducem rank-ul de mix direct calculat de Java
+        fetch(`/api/players/${id}/rank/mix`).then(res => res.ok ? res.text() : "0").catch(() => "0")
       ])
-        .then(([playerData, allPlayers]) => {
+        .then(([playerData, mixRankData]) => {
           if (playerData.error || !playerData.name) throw new Error("Date invalide primite de la server.");
           
           setPlayer(playerData);
 
-          // --- CALCULARE MIX RANK ÎN TIMP REAL ---
           const games = playerData.mixgames || playerData.mixGames || 0;
+          const parsedRank = parseInt(mixRankData);
           
-          if (games > 0 && allPlayers.length > 0) {
-            // 1. Filtrăm doar jucătorii cu meciuri de mix > 0
-            const rankedPlayers = allPlayers.filter(p => (p.mixgames || p.mixGames || 0) > 0);
-            
-            // 2. Sortăm descrescător după ELO
-            rankedPlayers.sort((a, b) => {
-              const eloA = a.mixelo || a.mixElo || 0;
-              const eloB = b.mixelo || b.mixElo || 0;
-              return eloB - eloA;
-            });
-
-            // 3. Găsim poziția jucătorului nostru
-            const pSteamId = String(playerData.steamid || playerData.steamId).toLowerCase();
-            const playerIndex = rankedPlayers.findIndex(p => String(p.steamid || p.steamId).toLowerCase() === pSteamId);
-            
-            if (playerIndex !== -1) {
-              setMixRank(`#${playerIndex + 1}`);
-            } else {
-              setMixRank("UNRANKED");
-            }
+          if (games > 0 && parsedRank > 0) {
+            setMixRank(`#${parsedRank}`);
           } else {
             setMixRank("UNRANKED");
           }
@@ -71,7 +45,6 @@ export default function Profile() {
         })
         .catch(err => {
           console.error("Eroare la încărcarea profilului:", err);
-          // Nu suprascriem jucătorul cu 'null' dacă a picat un simplu refresh de 30 secunde
           setLoading(false);
         });
     };
@@ -124,7 +97,7 @@ export default function Profile() {
 
   const getRoles = () => {
     const roleStr = (player.role || player.status || player.admin || "").toString().toLowerCase();
-    const vipValue = parseInt(player.vip);
+    const vipValue = parseInt(player.vip) || 0;
     let roles = [];
 
     if (roleStr.includes('developer') || roleStr.includes('dev')) {
@@ -135,16 +108,14 @@ export default function Profile() {
         roles.push({ name: "ADMIN", style: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" });
     }
 
+    // Noua logică VIP
     if (vipValue === 2) {
         roles.push({ name: "VIP LIFETIME", style: "bg-yellow-500/10 text-yellow-500 border-yellow-500/30" });
     } else if (vipValue > 2) {
         const expiryDate = new Date(vipValue * 1000);
         const dateString = expiryDate.toLocaleDateString('ro-RO');
         roles.push({ name: `VIP UNTIL: ${dateString}`, style: "bg-yellow-500/10 text-yellow-500 border-yellow-500/30" });
-    } else if (vipValue === 1) {
-        roles.push({ name: "VIP", style: "bg-yellow-500/10 text-yellow-500 border-yellow-500/30" });
     }
-
     return roles;
   };
 
@@ -204,10 +175,7 @@ export default function Profile() {
   };
 
   return (
-    // 1. Containerul părinte ocupă tot ecranul (w-full) și deține SCROLL-ul.
-    <div className="h-[100vh] w-full overflow-y-auto custom-scrollbar pb-20">
-      
-      {/* 2. Containerul copil ține tot conținutul limitat la mijloc (max-w-7xl) */}
+    <div className="min-h-screen w-full custom-scrollbar pb-20">      
       <div className="relative pt-32 px-4 md:px-8 max-w-7xl mx-auto space-y-8 animate-fade-in">
         
         <button 
@@ -220,18 +188,19 @@ export default function Profile() {
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end border-b border-outline-variant/20 pb-8">
           <div className="lg:col-span-8 flex flex-col md:flex-row items-center md:items-end space-y-6 md:space-y-0 md:space-x-8">
             <div className="relative w-48 h-48 bg-surface-container-highest overflow-hidden border-2 border-primary-dim/20 shadow-[0_0_15px_rgba(233,0,54,0.15)] shrink-0">
-               <img src={player.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${player.name}&backgroundType=gradientLinear&backgroundColor=0e0e0e,ff003c`} alt="Avatar" className="w-full h-full object-cover" />
+               <img src={player.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${player.name}&backgroundType=gradientLinear&backgroundColor=0e0e0e,ff003c`} alt="Avatar" loading="lazy" className="w-full h-full object-cover" />
             </div>
             <div className="flex-1 text-center md:text-left space-y-2 min-w-0">
               <div className="flex items-center justify-center md:justify-start gap-3">
-                 <span title={player.name} className="font-headline text-5xl md:text-7xl font-black tracking-tighter text-white uppercase leading-none truncate max-w-full">
-                    {player.name}
-                 </span>
+                 <span title={player.name} className="font-headline text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter text-white uppercase leading-none break-all max-w-full">
+                      {player.name}
+                </span>
                  
                  {player.country && player.country.toLowerCase() !== 'un' && (
                     <img 
                       src={`/countryflags/${player.country.toLowerCase()}.gif`} 
                       alt={player.country} 
+                      loading="lazy"
                       className="w-8 h-auto rounded-[2px] shadow-sm mb-1 opacity-90 shrink-0"
                       onError={(e) => { e.target.style.display = 'none'; }}
                     />
@@ -272,7 +241,7 @@ export default function Profile() {
           </div>
           <div className="grid grid-cols-2 gap-y-6 gap-x-4">
             <div className="space-y-1">
-              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Time Alive</p>
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Total Time</p>
               <p className="font-headline text-4xl font-bold text-white">{(player.time / 3600).toFixed(1)} <span className="text-sm text-gray-500">HRS</span></p>
             </div>
             <div className="space-y-1">

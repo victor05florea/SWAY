@@ -9,8 +9,7 @@ import sway.repository.ServerUtilityRepository;
 import sway.repository.SwayDataRepository;
 import sway.repository.JumpStatPreRepository;
 import sway.repository.JumpStatNoPreRepository;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -93,18 +92,6 @@ public class SwayDataController {
             }
         }
         return ResponseEntity.notFound().build();
-    }
-
-    @GetMapping("/page")
-    public Page<SwayData> getPlayersPage(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size,
-            @RequestParam(defaultValue = "kills") String sortBy) {
-
-        if ("mix".equalsIgnoreCase(sortBy)) {
-            return swayDataRepository.findAllByOrderByMixeloDesc(PageRequest.of(page, size));
-        }
-        return swayDataRepository.findAllByOrderByKillsDesc(PageRequest.of(page, size));
     }
 
 

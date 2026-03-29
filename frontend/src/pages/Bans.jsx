@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
 export default function Bans() {
@@ -27,9 +27,7 @@ export default function Bans() {
     };
 
     fetchCheaters();
-
     const interval = setInterval(fetchCheaters, 30000);
-
     return () => clearInterval(interval);
   }, []);
 
@@ -37,27 +35,28 @@ export default function Bans() {
     setCurrentPage(1);
   }, [searchTerm, filterReason, sortOrder]);
 
-  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center font-headline text-primary-dim text-2xl animate-pulse tracking-widest uppercase">Loading Database Records...</div>;
+  // OPTIMIZARE: useMemo asigură că filtrarea și sortarea se fac instant fără a bloca interfața
+  const processedData = useMemo(() => {
+    let filtered = cheaters.filter(c => 
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      (c.steamid && c.steamid.toString().includes(searchTerm))
+    );
 
-  let processedData = cheaters.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (c.steamid && c.steamid.toString().includes(searchTerm))
-  );
+    if (filterReason !== "ALL") {
+      filtered = filtered.filter(c => {
+        if (filterReason === "BHOP") return c.bhophack > 0;
+        if (filterReason === "GSTRAFE") return c.gstrafehack > 0;
+        if (filterReason === "STRAFE") return c.strafehack > 0;
+        if (filterReason === "DLL") return c.dll > 0;
+        if (filterReason === "MANUAL") return c.bhophack === 0 && c.gstrafehack === 0 && c.strafehack === 0 && c.dll === 0;
+        return true;
+      });
+    }
 
-  if (filterReason !== "ALL") {
-    processedData = processedData.filter(c => {
-      if (filterReason === "BHOP") return c.bhophack > 0;
-      if (filterReason === "GSTRAFE") return c.gstrafehack > 0;
-      if (filterReason === "STRAFE") return c.strafehack > 0;
-      if (filterReason === "DLL") return c.dll > 0;
-      if (filterReason === "MANUAL") return c.bhophack === 0 && c.gstrafehack === 0 && c.strafehack === 0 && c.dll === 0;
-      return true;
+    return filtered.sort((a, b) => {
+      return sortOrder === "NEWEST" ? b.id - a.id : a.id - b.id;
     });
-  }
-
-  processedData = [...processedData].sort((a, b) => {
-    return sortOrder === "NEWEST" ? b.id - a.id : a.id - b.id;
-  });
+  }, [cheaters, searchTerm, filterReason, sortOrder]);
 
   const totalPages = Math.ceil(processedData.length / itemsPerPage) || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -207,7 +206,17 @@ export default function Bans() {
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5 text-gray-300 text-[15px]">
-            {currentCheaters.map((cheater) => (
+            {loading ? (
+              // Skeleton Loading pentru fluiditate vizuală
+              [...Array(15)].map((_, i) => (
+                <tr key={`skel-${i}`} className="animate-pulse">
+                  <td className="px-6 py-5 flex items-center gap-4"><div className="w-10 h-10 bg-white/10 rounded-full"></div><div className="h-4 bg-white/10 rounded w-32"></div></td>
+                  <td className="px-6 py-5"><div className="h-4 bg-white/10 rounded w-24"></div></td>
+                  <td className="px-6 py-5"><div className="h-4 bg-white/10 rounded w-16 mx-auto"></div></td>
+                  <td className="px-6 py-5"><div className="h-4 bg-white/10 rounded w-20 ml-auto"></div></td>
+                </tr>
+              ))
+            ) : currentCheaters.map((cheater) => (
               <tr key={cheater.id} className="hover:bg-white/[0.03] transition-colors group">
                 
                 <td className="px-6 py-5">
@@ -220,6 +229,7 @@ export default function Bans() {
                       <img 
                         src={`https://community.fastly.steamstatic.com/public/images/countryflags/${cheater.country.toLowerCase()}.gif`} 
                         alt={cheater.country} 
+                        loading="lazy"
                         className="w-[24px] h-[18px] shadow-[0_0_5px_rgba(0,0,0,0.5)] opacity-90 group-hover:opacity-100 transition-opacity"
                         onError={(e) => { e.target.style.display = 'none'; }} 
                       />
@@ -230,6 +240,7 @@ export default function Bans() {
                     <img 
                       src={cheater.avatarurl || `https://api.dicebear.com/7.x/bottts/svg?seed=${cheater.name}&backgroundColor=e90036`} 
                       alt="avatar" 
+                      loading="lazy"
                       className="w-10 h-10 object-cover border border-primary-dim/30 grayscale opacity-80 group-hover:grayscale-0 group-hover:border-primary-dim transition-all"
                     />
                     
@@ -258,14 +269,14 @@ export default function Bans() {
           </tbody>
         </table>
 
-        {currentCheaters.length === 0 && (
+        {!loading && currentCheaters.length === 0 && (
           <div className="w-full py-16 text-center">
             <p className="font-headline text-primary-dim text-xl uppercase tracking-widest">No matching records found.</p>
           </div>
         )}
       </div>
 
-      {totalPages > 1 && (
+      {!loading && totalPages > 1 && (
         <div className="flex justify-center items-center border-t border-white/10 pt-8 shrink-0">
            <div className="flex items-center gap-2">
              <button 

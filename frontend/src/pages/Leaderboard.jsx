@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
 const getSteamId64 = (rawId) => {
@@ -144,9 +144,7 @@ export default function Leaderboard() {
     };
 
     fetchData();
-
     const interval = setInterval(fetchData, 30000);
-
     return () => clearInterval(interval);
   }, []);
 
@@ -160,57 +158,59 @@ export default function Leaderboard() {
     setCurrentPage(1);
   }, [mode, searchTerm, sortOrder, sortDirection, jumpServer, jumpType]);
 
-  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center font-headline text-primary-dim text-2xl animate-pulse tracking-widest uppercase">Loading Database Records...</div>;
-
-  let baseData = players;
-  if (mode === "MIX") {
-    baseData = baseData.filter(p => (p.mixgames || p.mixGames || 0) > 0);
-  } else if (mode === "JUMPS") {
-    baseData = baseData.filter(p => getJumpDistance(p, jumpServer, jumpType) > 0);
-  }
-
-  baseData = [...baseData].sort((a, b) => {
-    let valA = 0; let valB = 0;
+  // OPTIMIZARE: Folosim useMemo pentru ca React să nu mai blocheze UI-ul procesând 10.000 de iteme degeaba
+  const processedData = useMemo(() => {
+    let baseData = players;
     
-    if (mode === "HNS") {
-      if (sortOrder === "KILLS") { valA = a.kills || 0; valB = b.kills || 0; } 
-      else if (sortOrder === "WEEKTIME") { valA = a.time || a.weektime || 0; valB = b.time || b.weektime || 0; }
-    } else if (mode === "MIX") {
-      if (sortOrder === "ELO") { valA = a.mixelo || a.mixElo || 0; valB = b.mixelo || b.mixElo || 0; } 
-      else if (sortOrder === "GAMES") { valA = a.mixgames || a.mixGames || 0; valB = b.mixgames || b.mixGames || 0; } 
-      else if (sortOrder === "WON") { valA = a.mixwon || a.mixWon || 0; valB = b.mixwon || b.mixWon || 0; } 
-      else if (sortOrder === "DISCONNECTS") { valA = a.mixdisconnects || a.mixDisconnects || 0; valB = b.mixdisconnects || b.mixDisconnects || 0; } 
-      else if (sortOrder === "STABS") { valA = a.mixtotalstabs || a.mixTotalStabs || 0; valB = b.mixtotalstabs || b.mixTotalStabs || 0; }
+    if (mode === "MIX") {
+      baseData = baseData.filter(p => (p.mixgames || p.mixGames || 0) > 0);
     } else if (mode === "JUMPS") {
-      valA = getJumpDistance(a, jumpServer, jumpType);
-      valB = getJumpDistance(b, jumpServer, jumpType);
-      return valB - valA; 
+      baseData = baseData.filter(p => getJumpDistance(p, jumpServer, jumpType) > 0);
     }
 
-    if (mode !== "JUMPS") {
-      return sortDirection === "DESC" ? valB - valA : valA - valB;
-    }
-    return 0;
-  });
+    baseData = [...baseData].sort((a, b) => {
+      let valA = 0; let valB = 0;
+      
+      if (mode === "HNS") {
+        if (sortOrder === "KILLS") { valA = a.kills || 0; valB = b.kills || 0; } 
+        else if (sortOrder === "WEEKTIME") { valA = a.time || a.weektime || 0; valB = b.time || b.weektime || 0; }
+      } else if (mode === "MIX") {
+        if (sortOrder === "ELO") { valA = a.mixelo || a.mixElo || 0; valB = b.mixelo || b.mixElo || 0; } 
+        else if (sortOrder === "GAMES") { valA = a.mixgames || a.mixGames || 0; valB = b.mixgames || b.mixGames || 0; } 
+        else if (sortOrder === "WON") { valA = a.mixwon || a.mixWon || 0; valB = b.mixwon || b.mixWon || 0; } 
+        else if (sortOrder === "DISCONNECTS") { valA = a.mixdisconnects || a.mixDisconnects || 0; valB = b.mixdisconnects || b.mixDisconnects || 0; } 
+        else if (sortOrder === "STABS") { valA = a.mixtotalstabs || a.mixTotalStabs || 0; valB = b.mixtotalstabs || b.mixTotalStabs || 0; }
+      } else if (mode === "JUMPS") {
+        valA = getJumpDistance(a, jumpServer, jumpType);
+        valB = getJumpDistance(b, jumpServer, jumpType);
+        return valB - valA; 
+      }
 
-  baseData = baseData.map((p, index) => ({ ...p, trueRank: index + 1 }));
+      if (mode !== "JUMPS") {
+        return sortDirection === "DESC" ? valB - valA : valA - valB;
+      }
+      return 0;
+    });
 
-  let processedData = baseData.filter(p => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return true;
+    baseData = baseData.map((p, index) => ({ ...p, trueRank: index + 1 }));
 
-    const pName = String(p.name || "").toLowerCase();
-    const pSteamId = String(p.steamid || p.steamId || "").toLowerCase();
-    const calculated64 = getSteamId64(pSteamId);
-    
-    const urlMatch = term.match(/\d{17}/);
-    const search64 = urlMatch ? urlMatch[0] : "";
+    return baseData.filter(p => {
+      const term = searchTerm.trim().toLowerCase();
+      if (!term) return true;
 
-    return pName.includes(term) || 
-           pSteamId.includes(term) || 
-           calculated64.includes(term) ||
-           (search64 && calculated64 === search64);
-  });
+      const pName = String(p.name || "").toLowerCase();
+      const pSteamId = String(p.steamid || p.steamId || "").toLowerCase();
+      const calculated64 = getSteamId64(pSteamId);
+      
+      const urlMatch = term.match(/\d{17}/);
+      const search64 = urlMatch ? urlMatch[0] : "";
+
+      return pName.includes(term) || 
+             pSteamId.includes(term) || 
+             calculated64.includes(term) ||
+             (search64 && calculated64 === search64);
+    });
+  }, [players, mode, searchTerm, sortOrder, sortDirection, jumpServer, jumpType]);
 
   const totalPages = Math.ceil(processedData.length / itemsPerPage) || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -222,7 +222,7 @@ export default function Leaderboard() {
 
   const getRoleBadges = (player) => {
     const roleStr = (player.role || player.status || player.admin || "").toString().toLowerCase();
-    const vipValue = parseInt(player.vip) || 0; // Fallback la 0 dacă nu există
+    const vipValue = parseInt(player.vip) || 0; 
     
     let badges = [];
     
@@ -237,6 +237,7 @@ export default function Leaderboard() {
       const dateString = expiryDate.toLocaleDateString('ro-RO');
       badges.push(<span key="vip-until" className="text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-1 font-bold uppercase tracking-widest">VIP Until: {dateString}</span>);
     }
+    // VIP = 1 a fost scos
     if (badges.length === 0) return null;
     return <div className="flex flex-wrap justify-center gap-1">{badges}</div>;
   };
@@ -371,7 +372,17 @@ export default function Leaderboard() {
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5 text-gray-300 text-[15px]">
-            {currentPlayers.map((player, index) => {
+            {loading ? (
+              [...Array(15)].map((_, i) => (
+                <tr key={`skel-${i}`} className="animate-pulse">
+                  <td className="px-6 py-5"><div className="h-4 bg-white/10 rounded w-4 mx-auto"></div></td>
+                  <td className="px-6 py-5 flex items-center gap-4"><div className="w-10 h-10 bg-white/10 rounded-full"></div><div className="h-4 bg-white/10 rounded w-48"></div></td>
+                  <td className="px-6 py-5"><div className="h-4 bg-white/10 rounded w-16 mx-auto"></div></td>
+                  <td className="px-6 py-5"><div className="h-4 bg-white/10 rounded w-12 mx-auto"></div></td>
+                  <td className="px-6 py-5"><div className="h-4 bg-white/10 rounded w-16 ml-auto"></div></td>
+                </tr>
+              ))
+            ) : currentPlayers.map((player, index) => {
               
               let validAvatar = player.avatarurl || player.avatarUrl || player.avatar;
               const fallbackAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(player.name || "fallback")}&backgroundColor=e90036`;
@@ -381,6 +392,8 @@ export default function Leaderboard() {
               } else {
                 validAvatar = validAvatar.replace('http://', 'https://');
               }
+
+              const jumpDist = getJumpDistance(player, jumpServer, jumpType);
 
               return (
                 <tr key={player.id || index} className="hover:bg-white/[0.03] transition-colors group">
@@ -432,13 +445,13 @@ export default function Leaderboard() {
                   {mode === "JUMPS" && (
                     <>
                       <td className="px-6 py-5 text-center font-black text-primary-dim text-[18px] drop-shadow-md">
-                        {Number(getJumpDistance(player, jumpServer, jumpType)).toFixed(2)} <span className="text-xs text-gray-600 ml-1"></span>
+                        {jumpDist > 0 ? Number(jumpDist).toFixed(2) : "-"}
                       </td>
                       <td className="px-6 py-5 text-center text-gray-300 font-bold">
-                        {getJumpStrafes(player, jumpServer, jumpType)}
+                        {jumpDist > 0 ? getJumpStrafes(player, jumpServer, jumpType) : "-"}
                       </td>
                       <td className="px-6 py-5 text-right text-gray-400 font-bold">
-                        {Number(getJumpSync(player, jumpServer, jumpType)).toFixed(2)}%
+                        {jumpDist > 0 ? `${Number(getJumpSync(player, jumpServer, jumpType)).toFixed(2)}%` : "-"}
                       </td>
                     </>
                   )}
@@ -448,12 +461,12 @@ export default function Leaderboard() {
             })}
           </tbody>
         </table>
-        {currentPlayers.length === 0 && (
+        {!loading && currentPlayers.length === 0 && (
           <div className="w-full py-16 text-center"><p className="font-headline text-primary-dim text-xl uppercase tracking-widest">No matching records found.</p></div>
         )}
       </div>
 
-      {totalPages > 1 && (
+      {!loading && totalPages > 1 && (
         <div className="flex justify-center items-center border-t border-white/10 pt-8 shrink-0">
            <div className="flex items-center gap-2">
              <button onClick={goToPrevPage} disabled={currentPage === 1} className="h-8 md:h-10 px-3 md:px-4 border border-white/10 bg-surface-container-highest text-white font-headline text-xs uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 transition-colors flex items-center">&larr; PREV</button>

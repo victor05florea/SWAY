@@ -17,7 +17,7 @@ public class Cheater {
     private Integer steamid;
 
     @Column(name = "ip")
-    @JsonIgnore // MAGIA DE SECURITATE: Java nu va trimite IP-ul pe net!
+    @JsonIgnore
     private String ip;
 
     @Column(name = "country")

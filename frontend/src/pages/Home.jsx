@@ -97,21 +97,22 @@ export default function Home() {
     return `${h}h ${m}m`;
   };
 
-const steam64ToSteam32 = (steam64) => {
+// 1. Transformă Steam64 (17 cifre) în Account ID (ex: 371937544)
+  const steam64ToAccountId = (steam64) => {
     if (!steam64) return "";
     const str = steam64.trim();
-    // Dacă e Steam64 (17 cifre), îl transformăm în Steam32
+    
+    // Dacă e Steam64 (17 cifre)
     if (/^\d{17}$/.test(str)) {
        try {
          const id64 = BigInt(str);
          const base = BigInt("76561197960265728");
          const accountId = id64 - base;
-         const y = accountId % BigInt(2);
-         const z = accountId / BigInt(2);
-         return `STEAM_1:${y}:${z}`;
+         
+         // MAGIA AICI: Returnăm direct numărul (ex: 371937544)
+         return accountId.toString(); 
        } catch(e) { return str; }
     }
-    // Dacă e deja STEAM_1... sau altceva, îl lăsăm așa
     return str; 
   };
 
@@ -125,7 +126,7 @@ const steam64ToSteam32 = (steam64) => {
     }
   };
 
-  const parsePlayerList = (rawString) => {
+ const parsePlayerList = (rawString) => {
     if (!rawString || rawString.trim() === "") return [];
     return rawString.split(';')
       .filter(playerStr => playerStr.trim() !== "")
@@ -134,7 +135,8 @@ const steam64ToSteam32 = (steam64) => {
         return {
           flag: countryCode ? countryCode.toLowerCase() : 'un',
           name: fixEncoding(playerName) || 'Unknown',
-          id: steam64ToSteam32(steamId)
+          // Aici aplicăm noua funcție:
+          id: steam64ToAccountId(steamId) 
         };
       });
   };

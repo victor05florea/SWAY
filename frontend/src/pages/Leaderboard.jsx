@@ -5,13 +5,15 @@ const getSteamId64 = (rawId) => {
   if (!rawId) return "";
   let idStr = String(rawId).trim();
   try {
-    const steam64Base = 76561197960265728n;
+    const steam64Base = BigInt("76561197960265728"); 
+    
     if (idStr.toLowerCase().startsWith("steam_")) {
       const parts = idStr.split(":");
       if (parts.length === 3) {
         const y = BigInt(parts[1]);
         const z = BigInt(parts[2]);
-        return ((z * 2n) + y + steam64Base).toString();
+        // Am înlocuit 2n cu BigInt(2)
+        return ((z * BigInt(2)) + y + steam64Base).toString(); 
       }
     }
     if (/^\d+$/.test(idStr) && idStr.length < 16) {

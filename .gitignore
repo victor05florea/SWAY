@@ -57,3 +57,38 @@ frontend/dist/
 backend/target/
 backend/.mvn/
 *.jar
+
+
+
+backend/src/main/resources/application.properties
+backend/src/main/resources/application.yml
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+
+
+# Docker data volumes
+mysql_data/
+db_data/
+data/
+
+# Spring Boot help & wrapper
+backend/HELP.md
+backend/.mvn/wrapper/maven-wrapper.jar

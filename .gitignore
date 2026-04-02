@@ -92,3 +92,4 @@ data/
 # Spring Boot help & wrapper
 backend/HELP.md
 backend/.mvn/wrapper/maven-wrapper.jar
+logos/

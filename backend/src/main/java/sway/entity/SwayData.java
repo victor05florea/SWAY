@@ -72,9 +72,8 @@ public class SwayData {
     //Jump stats
     private Integer jumps;
     private Integer ducks;
-    @JsonIgnore
+
     private Integer ownages;
-    @JsonIgnore
     private Integer wreckers;
 
     @JsonIgnore

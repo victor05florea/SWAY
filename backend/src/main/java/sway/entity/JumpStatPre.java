@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
-@Table(name = "SWAY_JumpStats_Pre")
+@Table(name = "sway_jumpstats_pre")
 @Data
 public class JumpStatPre {
 

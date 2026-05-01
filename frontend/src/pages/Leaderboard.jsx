@@ -114,25 +114,31 @@ export default function Leaderboard() {
       Promise.all([
         fetch('/api/players/all').then(res => res.json()),
         fetch('/api/jumps/pre').then(res => res.ok ? res.json() : []).catch(() => []),
-        fetch('/api/jumps/nopre').then(res => res.ok ? res.json() : []).catch(() => [])
+        fetch('/api/jumps/nopre').then(res => res.ok ? res.json() : []).catch(() => []),
+        // Aducem și codații aici
+        fetch('/api/cheaters').then(res => res.ok ? res.json() : []).catch(() => [])
       ])
-      .then(([playersData, preData, nopreData]) => {
+      .then(([playersData, preData, nopreData, cheatersData]) => {
         const preMap = {};
-        preData.forEach(j => {
-          if (j.steamid) preMap[steamToAccountId(j.steamid)] = j;
-        });
+        preData.forEach(j => { if (j.steamid) preMap[steamToAccountId(j.steamid)] = j; });
 
         const nopreMap = {};
-        nopreData.forEach(j => {
-          if (j.steamid) nopreMap[steamToAccountId(j.steamid)] = j;
-        });
+        nopreData.forEach(j => { if (j.steamid) nopreMap[steamToAccountId(j.steamid)] = j; });
 
-        const combinedPlayers = playersData.map(p => {
+       const combinedPlayers = playersData.map(p => {
           const accId = steamToAccountId(p.steamid || p.steamId);
+          
+          // Căutăm inteligent, trecând ambele SteamID-uri prin convertor
+          const foundCheater = cheatersData.find(c => {
+              const cheaterAccId = steamToAccountId(c.steamid || c.steamId);
+              return cheaterAccId === accId;
+          });
+          
           return {
             ...p,
             jumpStatsPre: p.jumpStatsPre || preMap[accId] || null,
-            jumpStatsNoPre: p.jumpStatsNoPre || nopreMap[accId] || null
+            jumpStatsNoPre: p.jumpStatsNoPre || nopreMap[accId] || null,
+            cheaterInfo: foundCheater || null 
           };
         });
 
@@ -229,8 +235,9 @@ export default function Leaderboard() {
     let badges = [];
     
     if (roleStr.includes('developer') || roleStr.includes('dev')) badges.push(<span key="dev" className="text-[10px] bg-red-500/10 text-red-500 border border-red-500/30 px-2 py-1 font-bold uppercase tracking-widest">Developer</span>);
-    if (roleStr.includes('head admin')) badges.push(<span key="hadmin" className="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/30 px-2 py-1 font-bold uppercase tracking-widest">Head Admin</span>);
-    else if (roleStr.includes('admin') || roleStr === "1") badges.push(<span key="admin" className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-1 font-bold uppercase tracking-widest">Admin</span>);
+    if (roleStr.includes('head admin')) {badges.push(<span key="hadmin" className="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/30 px-2 py-1 font-bold uppercase tracking-widest">Head Admin</span>);
+    }else if (roleStr.includes('admin') || roleStr === "1") {badges.push(<span key="admin" className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-1 font-bold uppercase tracking-widest">Admin</span>);}
+    else if (roleStr.includes('helper')) { badges.push(<span key="helper" className="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/30 px-2 py-1 font-bold uppercase tracking-widest">Helper</span>);}
 
     if (vipValue === 2) {
       badges.push(<span key="vip-life" className="text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-1 font-bold uppercase tracking-widest">VIP Lifetime</span>);
@@ -238,8 +245,11 @@ export default function Leaderboard() {
       const expiryDate = new Date(vipValue * 1000);
       const dateString = expiryDate.toLocaleDateString('ro-RO');
       badges.push(<span key="vip-until" className="text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-1 font-bold uppercase tracking-widest">VIP Until: {dateString}</span>);
+    } 
+    if (player.cheaterInfo) {
+        badges.push(<span key="cheater" className="text-[10px] bg-red-600 text-white border border-red-800 px-2 py-1 font-bold uppercase tracking-widest animate-pulse shadow-[0_0_10px_rgba(220,38,38,0.5)]">CHEATER</span>);
     }
-    // VIP = 1 a fost scos
+
     if (badges.length === 0) return null;
     return <div className="flex flex-wrap justify-center gap-1">{badges}</div>;
   };

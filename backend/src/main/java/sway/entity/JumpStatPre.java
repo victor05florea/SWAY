@@ -2,12 +2,14 @@ package sway.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import java.io.Serializable;
 
 @Entity
-@Table(name = "sway_jumpstats_pre")
+@Table(name = "SWAY_JumpStats_Pre")
 @Data
-public class JumpStatPre {
+public class JumpStatPre implements Serializable{
 
+    private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;

@@ -1,5 +1,6 @@
 package sway.entity;
 
+import java.io.Serializable;
 import jakarta.persistence.*;
 import lombok.Data;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -8,8 +9,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @Entity
 @Table(name="SWAY_Data")
 @Data
-public class SwayData {
+public class SwayData implements Serializable {
 
+    private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -175,12 +177,8 @@ public class SwayData {
     private JumpStatNoPre jumpStatsNoPre;
 
     // Getter inteligent: lasă variabila Integer, dar trimite un String către Controller
-    public String getSteamId() {
-        if (this.steamid == null) {
-            return null;
-        }
-        // String.valueOf() este varianta antiglonț a lui .toString()
-        return String.valueOf(this.steamid);
+    public String getSteamId() { // cu "I" mare
+        return (this.steamid == null) ? null : String.valueOf(this.steamid);
     }
 
     public void setJumpStatsPre(JumpStatPre jumpStatsPre) {

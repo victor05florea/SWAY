@@ -119,11 +119,20 @@ export default function Home() {
   // 2. Funcția care repară caracterele speciale din nume (UTF-8 Decode)
   const fixEncoding = (str) => {
     if (!str) return "";
-    try {
-      return decodeURIComponent(escape(str));
-    } catch (e) {
-      return str;
+    const clean = String(str)
+      .replace(/^[\u0000-\u001F\u007F-\u009F\uFEFF]+/, "")
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, "")
+      .trim();
+
+    if (/%[0-9A-Fa-f]{2}/.test(clean)) {
+      try {
+        return decodeURIComponent(clean);
+      } catch (e) {
+        return clean;
+      }
     }
+
+    return clean;
   };
 
  const parsePlayerList = (rawString) => {

@@ -1,5 +1,6 @@
 package sway;
 
+import java.io.Serializable;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
@@ -9,9 +10,11 @@ import java.util.Map;
 
 @SpringBootApplication
 @EnableCaching
-public class BackendApplication {
+public class BackendApplication implements Serializable{
+    private static final long serialVersionUID = 1L;
 	public static void main(String[] args) {
 		// #region agent log
+
 		Map<String, Object> startData = new HashMap<>();
 		startData.put("userDir", System.getProperty("user.dir"));
 		startData.put("javaVersion", System.getProperty("java.version"));

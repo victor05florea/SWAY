@@ -8,7 +8,5 @@ public interface SwayDataRepository extends JpaRepository<SwayData, Integer> {
     SwayData findTopByOrderByWeektimeDesc();
     int countByKillsGreaterThan(int kills);
     int countByMixeloGreaterThan(int mixelo);
-    Integer countByKillsGreaterThan(Integer kills);
     Optional<SwayData> findBySteamid(Integer steamid);
-    Optional<SwayData> findBySteamId(String steamId);
 }

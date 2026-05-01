@@ -1,5 +1,6 @@
 package sway.entity;
 
+import java.io.Serializable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -7,8 +8,9 @@ import lombok.Data;
 @Entity
 @Table(name = "SWAY_Cheaters")
 @Data
-public class Cheater {
+public class Cheater implements Serializable{
 
+    private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;

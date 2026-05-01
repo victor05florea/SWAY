@@ -1,6 +1,7 @@
 package sway.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import sway.entity.ServerUtility;
@@ -33,11 +34,13 @@ public class SwayDataController {
     // --- RUTE VECHI (Păstrate pentru compatibilitate) ---
 
     @GetMapping("/all")
+    @Cacheable("players-all")
     public List<SwayData> getAllPlayers() {
         return swayDataRepository.findAll();
     }
 
     @GetMapping("/status")
+    @Cacheable("players-status")
     public List<ServerUtility> getServersStatus() {
         return serverUtilityRepository.findAll();
     }
@@ -47,6 +50,7 @@ public class SwayDataController {
 
     // 1. Returnează doar numărul total de jucători
     @GetMapping("/count")
+    @Cacheable("players-count")
     public long getTotalPlayers() {
         return swayDataRepository.count();
     }
@@ -96,40 +100,23 @@ public class SwayDataController {
     }
 
     // --- RUTA PENTRU PROFIL ---
+    // --- RUTA PENTRU PROFIL (REPARATĂ) ---
     @GetMapping("/{id}")
     public ResponseEntity<SwayData> getPlayerById(@PathVariable String id) {
-        Optional<SwayData> playerOpt = Optional.empty();
-
-        // 1. Căutăm după SteamID (String)
-        try {
-            playerOpt = swayDataRepository.findBySteamId(id);
-        } catch (Exception ignored) {}
-
-        // 2. Dacă nu l-a găsit, căutăm după ID numeric
-        if (!playerOpt.isPresent()) {
-            try {
-                Integer numericId = Integer.parseInt(id);
-                playerOpt = swayDataRepository.findBySteamid(numericId);
-                if (!playerOpt.isPresent()) {
-                    playerOpt = swayDataRepository.findById(numericId);
-                }
-            } catch (NumberFormatException ignored) {}
+        Integer numericId = parseNumericId(id);
+        if (numericId == null) {
+            return ResponseEntity.notFound().build();
         }
+
+        Optional<SwayData> playerOpt = findPlayerByAnyIdFormat(numericId);
 
         if (playerOpt.isPresent()) {
             SwayData player = playerOpt.get();
 
-            // --- Logica de JumpStats (Reparată pentru Java 8) ---
-            String rawSteamId = player.getSteamId();
-            if (rawSteamId != null && !rawSteamId.isEmpty()) {
-                // ... (logica ta de conversie SteamID rămâne la fel) ...
-
-                // Exemplu de fix pentru jumpstats:
-                Optional<sway.entity.JumpStatPre> preData = preRepo.findBySteamid(rawSteamId);
-                if (!preData.isPresent()) {
-                    // Încearcă varianta alternativă dacă prima lipsește
-                }
-                preData.ifPresent(player::setJumpStatsPre);
+            try {
+                attachJumpStats(player, numericId);
+            } catch (Exception ignored) {
+                // Keep profile endpoint available even when jump tables are unavailable.
             }
 
             int kills = player.getKills() != null ? player.getKills() : 0;
@@ -137,6 +124,84 @@ public class SwayDataController {
 
             return ResponseEntity.ok().body(player);
         }
+
         return ResponseEntity.notFound().build();
+    }
+
+    private Integer parseNumericId(String rawId) {
+        if (rawId == null || rawId.trim().isEmpty()) {
+            return null;
+        }
+
+        String cleanId = rawId;
+        if (rawId.contains(":")) {
+            String[] parts = rawId.split(":");
+            cleanId = parts[parts.length - 1];
+        }
+
+        try {
+            return Integer.parseInt(cleanId);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private Optional<SwayData> findPlayerByAnyIdFormat(Integer numericId) {
+        Optional<SwayData> playerOpt = swayDataRepository.findBySteamid(numericId);
+        if (playerOpt.isPresent()) {
+            return playerOpt;
+        }
+
+        playerOpt = swayDataRepository.findById(numericId);
+        if (playerOpt.isPresent()) {
+            return playerOpt;
+        }
+
+        // Some frontend sources send Steam AccountID, while DB stores Steam2 Z-part.
+        int normalizedSteam2Z = numericId / 2;
+        if (normalizedSteam2Z > 0 && normalizedSteam2Z != numericId) {
+            playerOpt = swayDataRepository.findBySteamid(normalizedSteam2Z);
+            if (playerOpt.isPresent()) {
+                return playerOpt;
+            }
+            return swayDataRepository.findById(normalizedSteam2Z);
+        }
+
+        return Optional.empty();
+    }
+
+    private void attachJumpStats(SwayData player, Integer fallbackNumericId) {
+        Integer steamNumeric = null;
+        String playerSteamId = player.getSteamId();
+        if (playerSteamId != null) {
+            try {
+                steamNumeric = Integer.parseInt(playerSteamId);
+            } catch (NumberFormatException ignored) {
+                steamNumeric = fallbackNumericId;
+            }
+        } else {
+            steamNumeric = fallbackNumericId;
+        }
+
+        if (steamNumeric == null || steamNumeric <= 0) {
+            return;
+        }
+
+        String directId = "STEAM_1:0:" + steamNumeric;
+        preRepo.findBySteamid(directId).ifPresent(player::setJumpStatsPre);
+        noPreRepo.findBySteamid(directId).ifPresent(player::setJumpStatsNoPre);
+
+        if (player.getJumpStatsPre() == null || player.getJumpStatsNoPre() == null) {
+            int halfId = steamNumeric / 2;
+            if (halfId > 0 && halfId != steamNumeric) {
+                String halfBasedId = "STEAM_1:0:" + halfId;
+                if (player.getJumpStatsPre() == null) {
+                    preRepo.findBySteamid(halfBasedId).ifPresent(player::setJumpStatsPre);
+                }
+                if (player.getJumpStatsNoPre() == null) {
+                    noPreRepo.findBySteamid(halfBasedId).ifPresent(player::setJumpStatsNoPre);
+                }
+            }
+        }
     }
 }

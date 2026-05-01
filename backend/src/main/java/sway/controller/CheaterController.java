@@ -1,6 +1,6 @@
 package sway.controller;
 
-import org.springframework.http.ResponseEntity;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 import sway.entity.Cheater;
 import sway.repository.CheaterRepository;
@@ -18,8 +18,8 @@ public class CheaterController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Cheater>> getAllCheaters() {
-        List<Cheater> cheaters = cheaterRepository.findAllByOrderByIdDesc();
-        return ResponseEntity.ok(cheaters);
+    @Cacheable("cheaters-all")
+    public List<Cheater> getAllCheaters() {
+        return cheaterRepository.findAllByOrderByIdDesc();
     }
 }

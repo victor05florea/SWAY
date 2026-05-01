@@ -38,6 +38,16 @@ function BackgroundSlider() {
             opacity: 0; animation: slideshow 60s linear infinite; 
             filter: brightness(0.15) blur(4px) saturate(0.5);
         }
+        @media (max-width: 767px) {
+          .slide {
+            animation: none;
+            opacity: 0;
+            filter: brightness(0.25) blur(1px) saturate(0.7);
+          }
+          .slide:first-child {
+            opacity: 1;
+          }
+        }
       `}</style>
       <div className="slideshow-container">
         {images.map((img, index) => (
@@ -58,7 +68,12 @@ function BackgroundSlider() {
 
 function Navigation() {
   const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isActive = (path) => location.pathname === path;
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
 
   return (
     <nav className="bg-background/90 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-outline-variant/15 transition-all duration-300">
@@ -67,6 +82,14 @@ function Navigation() {
         <Link to="/" className="text-2xl font-black italic text-sway-red tracking-widest font-headline hover:drop-shadow-[0_0_15px_rgba(233,0,54,0.8)] transition-all duration-300 cursor-pointer z-10">
           SWAY
         </Link>
+
+        <button
+          onClick={() => setIsMobileMenuOpen(prev => !prev)}
+          className="md:hidden inline-flex items-center justify-center w-10 h-10 border border-white/15 text-gray-300 hover:text-white hover:border-primary-dim/40 transition-colors"
+          aria-label="Toggle menu"
+        >
+          {isMobileMenuOpen ? "✕" : "☰"}
+        </button>
         
         <div className="hidden md:flex items-center gap-8 mx-auto absolute left-1/2 -translate-x-1/2">
           
@@ -107,8 +130,30 @@ function Navigation() {
           </a>
 
         </div>
-
       </div>
+
+      <div className={`md:hidden fixed top-[73px] right-0 h-[calc(100vh-73px)] w-[82%] max-w-[320px] bg-background/95 backdrop-blur-xl border-l border-white/10 transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="flex flex-col p-5 gap-3">
+          <Link to="/" className={`font-headline uppercase tracking-widest text-sm px-3 py-3 border ${isActive('/') ? 'text-white border-primary-dim/40 bg-primary-dim/10' : 'text-gray-400 border-white/10'}`}>Home</Link>
+          <Link to="/leaderboard" className={`font-headline uppercase tracking-widest text-sm px-3 py-3 border ${isActive('/leaderboard') ? 'text-white border-primary-dim/40 bg-primary-dim/10' : 'text-gray-400 border-white/10'}`}>Rankings</Link>
+          <Link to="/bans" className={`font-headline uppercase tracking-widest text-sm px-3 py-3 border ${isActive('/bans') ? 'text-white border-primary-dim/40 bg-primary-dim/10' : 'text-gray-400 border-white/10'}`}>Hall of Shame</Link>
+          <Link to="/demos" className={`font-headline uppercase tracking-widest text-sm px-3 py-3 border ${isActive('/demos') ? 'text-white border-primary-dim/40 bg-primary-dim/10' : 'text-gray-400 border-white/10'}`}>Demos</Link>
+
+          <div className="h-px bg-white/10 my-2"></div>
+
+          <a href="https://discord.gg/eWMUKGB" target="_blank" rel="noreferrer" className="font-headline uppercase tracking-widest text-xs px-3 py-3 border border-white/10 text-gray-300">Discord</a>
+          <a href="https://steamcommunity.com/groups/swayhns" target="_blank" rel="noreferrer" className="font-headline uppercase tracking-widest text-xs px-3 py-3 border border-white/10 text-gray-300">Steam Group</a>
+          <a href="https://www.youtube.com/@cra5h1337" target="_blank" rel="noreferrer" className="font-headline uppercase tracking-widest text-xs px-3 py-3 border border-white/10 text-gray-300">Youtube</a>
+        </div>
+      </div>
+
+      {isMobileMenuOpen && (
+        <button
+          className="md:hidden fixed inset-0 top-[73px] bg-black/45"
+          onClick={() => setIsMobileMenuOpen(false)}
+          aria-label="Close menu overlay"
+        />
+      )}
     </nav>
   );
 }

@@ -79,6 +79,11 @@ export default function Profile() {
 
   const kdRatio = (player.kills / (player.deaths || 1)).toFixed(2);
   const hasMixStats = (player.mixgames || player.mixGames || 0) > 0; // Verificare stats mix[cite: 3]
+  const showFirstName = Boolean(
+    player.firstname &&
+    String(player.firstname).trim() &&
+    String(player.firstname).trim().toLowerCase() !== String(player.name || "").trim().toLowerCase()
+  );
 
   const getSteamProfileUrl = () => {
     const rawId = player.steamid || player.steamId;
@@ -124,6 +129,7 @@ export default function Profile() {
 
   const getRoles = () => {
     const roleStr = (player.role || player.status || player.admin || "").toString().toLowerCase();
+    const adminValue = parseInt(player.admin, 10);
     const vipValue = parseInt(player.vip) || 0;
     let roles = [];
 
@@ -131,12 +137,14 @@ export default function Profile() {
         roles.push({ name: "BANNED", style: "bg-red-900/40 text-red-500 border-red-500/50 shadow-[0_0_10px_rgba(220,38,38,0.3)] animate-pulse" });
     }
 
-    if (roleStr.includes('developer') || roleStr.includes('dev')) {
+    if (roleStr.includes('developer') || roleStr.includes('dev') || adminValue >= 4) {
         roles.push({ name: "DEVELOPER", style: "bg-red-500/10 text-red-500 border-red-500/30" });
-    } else if (roleStr.includes('head admin')) {
+    } else if (roleStr.includes('head admin') || adminValue === 3) {
         roles.push({ name: "HEAD ADMIN", style: "bg-orange-500/10 text-orange-400 border-orange-500/30" });
-    } else if (roleStr.includes('admin') || roleStr === "1") {
+    } else if (roleStr.includes('admin') || adminValue === 2) {
         roles.push({ name: "ADMIN", style: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" });
+    } else if (roleStr.includes('helper') || adminValue === 1) {
+        roles.push({ name: "HELPER", style: "bg-blue-500/10 text-blue-400 border-blue-500/30" });
     }
 
     if (vipValue === 2) {
@@ -211,13 +219,15 @@ export default function Profile() {
             <div className="flex-1 text-center md:text-left space-y-2 min-w-0">
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
                  <span title={player.name} className="font-headline text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter text-white uppercase leading-none break-all max-w-full">{player.name}</span>
-                 <div className="group relative inline-flex items-center justify-center">
-                   <span className="flex items-center justify-center w-5 h-5 rounded-full border border-outline-variant/40 bg-white/5 text-gray-400 hover:text-white transition-all text-[10px] font-bold shadow-sm cursor-default">!</span>
-                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 bg-surface-container-highest border border-outline-variant/30 px-5 py-2.5 rounded shadow-xl z-50 w-max max-w-[300px] text-center pointer-events-none">
-                      <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1 border-b border-white/5 pb-1">First name</p>
-                      <p className="font-headline text-sm text-white pt-1">{player.firstname || player.name}</p>
+                 {showFirstName && (
+                   <div className="group relative inline-flex items-center justify-center">
+                     <span className="flex items-center justify-center w-5 h-5 rounded-full border border-outline-variant/40 bg-white/5 text-gray-400 hover:text-white transition-all text-[10px] font-bold shadow-sm cursor-default">!</span>
+                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 bg-surface-container-highest border border-outline-variant/30 px-5 py-2.5 rounded shadow-xl z-50 w-max max-w-[300px] text-center pointer-events-none">
+                        <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1 border-b border-white/5 pb-1">First name</p>
+                        <p className="font-headline text-sm text-white pt-1">{player.firstname}</p>
+                     </div>
                    </div>
-                 </div>
+                 )}
                  {player.country && player.country.toLowerCase() !== 'un' && (
                     <img src={`/countryflags/${player.country.toLowerCase()}.gif`} alt={player.country} loading="lazy" className="w-8 h-auto rounded-[2px] shadow-sm mb-1 opacity-90 shrink-0" onError={(e) => { e.target.style.display = 'none'; }} />
                  )}
@@ -264,10 +274,10 @@ export default function Profile() {
                <div className="flex flex-col gap-1 w-full lg:w-auto items-end py-1">
                  {(() => {
                    let reasons = [];
-                   if (cheaterInfo.bhophack > 0) reasons.push({ name: 'Bhop Script', count: cheaterInfo.bhophack });
-                   if (cheaterInfo.gstrafehack > 0) reasons.push({ name: 'G-Strafe Hack', count: cheaterInfo.gstrafehack });
-                   if (cheaterInfo.strafehack > 0) reasons.push({ name: 'Strafe Optimizer', count: cheaterInfo.strafehack });
-                   if (cheaterInfo.dll > 0) reasons.push({ name: 'DLL Inject', count: cheaterInfo.dll });
+                   if (cheaterInfo.bhophack > 0) reasons.push({ name: 'BhopHack', count: cheaterInfo.bhophack });
+                   if (cheaterInfo.gstrafehack > 0) reasons.push({ name: 'GStrafeHack', count: cheaterInfo.gstrafehack });
+                   if (cheaterInfo.strafehack > 0) reasons.push({ name: 'StrafeHack', count: cheaterInfo.strafehack });
+                   if (cheaterInfo.dll > 0) reasons.push({ name: 'DLL Injection', count: cheaterInfo.dll });
                    if (reasons.length === 0) return <span className={`font-headline text-sm uppercase tracking-wider ${cheaterInfo.banned === 0 ? 'text-gray-400' : 'text-red-400'}`}>Manual / Admin</span>;
                    return reasons.map(r => (
                       <div key={r.name} className="grid grid-cols-[1fr_40px] gap-x-4 items-center w-full lg:w-auto">

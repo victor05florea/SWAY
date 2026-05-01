@@ -15,14 +15,42 @@ export default function Bans() {
   useEffect(() => {
     const fetchCheaters = () => {
       fetch("/api/cheaters")
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error(`Cheaters API failed: ${res.status}`);
+          return res.json();
+        })
         .then(data => {
-          setCheaters(data);
+          if (Array.isArray(data)) {
+            setCheaters(data);
+          } else if (Array.isArray(data?.content)) {
+            setCheaters(data.content);
+          } else if (Array.isArray(data?.data)) {
+            setCheaters(data.data);
+          } else {
+            setCheaters([]);
+          }
           setLoading(false);
         })
         .catch(err => {
           console.error("Eroare la baza de date de bans:", err);
-          setLoading(false);
+          fetch(`/api/cheaters?nocache=${Date.now()}`)
+            .then(res => res.ok ? res.json() : [])
+            .then(data => {
+              if (Array.isArray(data)) {
+                setCheaters(data);
+              } else if (Array.isArray(data?.content)) {
+                setCheaters(data.content);
+              } else if (Array.isArray(data?.data)) {
+                setCheaters(data.data);
+              } else {
+                setCheaters([]);
+              }
+              setLoading(false);
+            })
+            .catch(() => {
+              setCheaters([]);
+              setLoading(false);
+            });
         });
     };
 
@@ -37,24 +65,32 @@ export default function Bans() {
 
   // OPTIMIZARE: useMemo asigură că filtrarea și sortarea se fac instant fără a bloca interfața
   const processedData = useMemo(() => {
-    let filtered = cheaters.filter(c => 
-      c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      (c.steamid && c.steamid.toString().includes(searchTerm))
-    );
+    const safeTerm = searchTerm.toLowerCase();
+    let filtered = (Array.isArray(cheaters) ? cheaters : []).filter(c => {
+      const safeName = String(c?.name || "").toLowerCase();
+      const safeSteamId = c?.steamid != null ? String(c.steamid) : "";
+      return safeName.includes(safeTerm) || safeSteamId.includes(searchTerm);
+    });
 
     if (filterReason !== "ALL") {
       filtered = filtered.filter(c => {
-        if (filterReason === "BHOP") return c.bhophack > 0;
-        if (filterReason === "GSTRAFE") return c.gstrafehack > 0;
-        if (filterReason === "STRAFE") return c.strafehack > 0;
-        if (filterReason === "DLL") return c.dll > 0;
-        if (filterReason === "MANUAL") return c.bhophack === 0 && c.gstrafehack === 0 && c.strafehack === 0 && c.dll === 0;
+        const bhop = Number(c?.bhophack || 0);
+        const gstrafe = Number(c?.gstrafehack || 0);
+        const strafe = Number(c?.strafehack || 0);
+        const dll = Number(c?.dll || 0);
+        if (filterReason === "BHOP") return bhop > 0;
+        if (filterReason === "GSTRAFE") return gstrafe > 0;
+        if (filterReason === "STRAFE") return strafe > 0;
+        if (filterReason === "DLL") return dll > 0;
+        if (filterReason === "MANUAL") return bhop === 0 && gstrafe === 0 && strafe === 0 && dll === 0;
         return true;
       });
     }
 
     return filtered.sort((a, b) => {
-      return sortOrder === "NEWEST" ? b.id - a.id : a.id - b.id;
+      const leftId = Number(a?.id || 0);
+      const rightId = Number(b?.id || 0);
+      return sortOrder === "NEWEST" ? rightId - leftId : leftId - rightId;
     });
   }, [cheaters, searchTerm, filterReason, sortOrder]);
 
@@ -166,7 +202,7 @@ export default function Bans() {
       <div className="bg-surface-container-low/40 border border-white/5 p-4 flex flex-col md:flex-row gap-4 shrink-0">
         <input 
           type="text" 
-          placeholder="SEARCH OFFENDER..." 
+          placeholder="SEARCH PLAYER..." 
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="flex-1 bg-surface-container-highest border border-white/10 text-white font-headline text-xs px-4 py-3 focus:outline-none focus:border-primary-dim transition-colors uppercase tracking-widest placeholder:text-gray-600"
@@ -202,7 +238,7 @@ export default function Bans() {
               <th className="px-6 py-4">Name</th>
               <th className="px-6 py-4">Detected Using</th>
               <th className="px-6 py-4 text-center w-[150px]">Status</th>
-              <th className="px-6 py-4 text-right">Date of Ban</th>
+              <th className="px-6 py-4 text-center w-[180px]">Date of Ban</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5 text-gray-300 text-[15px]">
@@ -227,7 +263,7 @@ export default function Bans() {
                   >
                     {cheater.country && cheater.country.length > 0 && cheater.country.toLowerCase() !== 'un' ? (
                       <img 
-                        src={`https://community.fastly.steamstatic.com/public/images/countryflags/${cheater.country.toLowerCase()}.gif`} 
+                        src={`/countryflags/${cheater.country.toLowerCase()}.gif`} 
                         alt={cheater.country} 
                         loading="lazy"
                         className="w-[24px] h-[18px] shadow-[0_0_5px_rgba(0,0,0,0.5)] opacity-90 group-hover:opacity-100 transition-opacity"

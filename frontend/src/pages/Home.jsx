@@ -150,32 +150,35 @@ export default function Home() {
       });
   };
 
-  const getRoleBadge = (player) => {
-    const roleStr = (player.role || player.status || player.rankName || "").toLowerCase();
+  const getRoleBadges = (player) => {
+    const roleStr = (player.role || player.status || player.rankName || player.admin || "").toString().toLowerCase();
+    const adminValue = parseInt(player.admin, 10);
     const vipValue = parseInt(player.vip) || 0;
+    const badges = [];
     
-    if (roleStr.includes('developer') || roleStr.includes('dev')) {
-      return <span className="text-[9px] font-bold uppercase tracking-widest text-red-500 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]">Developer</span>;
+    if (roleStr.includes('developer') || roleStr.includes('dev') || adminValue >= 4) {
+      badges.push(<span key="dev" className="text-[9px] font-bold uppercase tracking-widest text-red-500 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]">Developer</span>);
     }
-    if (roleStr.includes('head admin')) {
-      return <span className="text-[9px] font-bold uppercase tracking-widest text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded border border-orange-500/20 shadow-[0_0_10px_rgba(249,115,22,0.1)]">Head Admin</span>;
+    if (roleStr.includes('head admin') || adminValue === 3) {
+      badges.push(<span key="head-admin" className="text-[9px] font-bold uppercase tracking-widest text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded border border-orange-500/20 shadow-[0_0_10px_rgba(249,115,22,0.1)]">Head Admin</span>);
     }
-    if (roleStr.includes('admin')) {
-      return <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]">Admin</span>;
+    if (roleStr.includes('admin') || adminValue === 2 || adminValue === 1) {
+      badges.push(<span key="admin" className="text-[9px] font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]">Admin</span>);
     }
-    if (roleStr.includes('helper')) {
-      return <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20 shadow-[0_0_10px_rgba(59,130,246,0.1)]">Helper</span>;
+    if (roleStr.includes('helper') || adminValue === 1) {
+      badges.push(<span key="helper" className="text-[9px] font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20 shadow-[0_0_10px_rgba(59,130,246,0.1)]">Helper</span>);
     }
     
     if (vipValue === 2) {
-      return <span className="text-[9px] font-bold uppercase tracking-widest text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded border border-yellow-400/20 shadow-[0_0_10px_rgba(250,204,21,0.1)]">VIP Lifetime</span>;
+      badges.push(<span key="vip-life" className="text-[9px] font-bold uppercase tracking-widest text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded border border-yellow-400/20 shadow-[0_0_10px_rgba(250,204,21,0.1)]">VIP Lifetime</span>);
     } else if (vipValue > 2) {
       const expiryDate = new Date(vipValue * 1000);
       const dateString = expiryDate.toLocaleDateString('ro-RO');
-      return <span className="text-[9px] font-bold uppercase tracking-widest text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded border border-yellow-400/20 shadow-[0_0_10px_rgba(250,204,21,0.1)]">VIP Until: {dateString}</span>;
+      badges.push(<span key="vip-until" className="text-[9px] font-bold uppercase tracking-widest text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded border border-yellow-400/20 shadow-[0_0_10px_rgba(250,204,21,0.1)]">VIP Until: {dateString}</span>);
     }
-    
-    return null;
+
+    if (badges.length === 0) return null;
+    return <div className="mt-2 flex flex-wrap gap-2">{badges}</div>;
   };
 
   const PlayerColumn = ({ title, players, color }) => (
@@ -251,6 +254,9 @@ export default function Home() {
 
       {potw && (() => {
         const potwFlag = (potw.country || potw.flag || 'un').toLowerCase();
+        const potwMixGames = Number(potw.mixgames || potw.mixGames || 0);
+        const potwMixElo = Number(potw.mixelo || potw.mixElo || 0);
+        const potwMixRank = Number(potw.mixRank || 0);
         return (
           <section className="mb-14 relative z-10 flex justify-center">
             <div className="bg-gradient-to-r from-surface-container-low/20 via-primary-dim/10 to-surface-container-low/20 border border-primary-dim/20 backdrop-blur-md rounded-2xl px-6 md:px-8 py-5 flex flex-col md:flex-row items-center gap-6 shadow-[0_0_30px_rgba(233,0,54,0.05)] hover:shadow-[0_0_30px_rgba(233,0,54,0.15)] transition-all duration-500">
@@ -280,9 +286,7 @@ export default function Home() {
                       {potw.name}
                     </Link>
                   </div>
-                  <div className="mt-2">
-                    {getRoleBadge(potw)}
-                  </div>
+                  {getRoleBadges(potw)}
                 </div>
               </div>
               <div className="hidden md:block w-px h-12 bg-white/10 mx-2"></div>
@@ -295,6 +299,12 @@ export default function Home() {
                   <span className="text-[9px] uppercase tracking-widest text-zinc-500">Rank</span>
                   <span className="text-lg font-bold text-emerald-400 font-mono drop-shadow-sm">#{potw.realHnsRank || potw.serverRank}</span>
                 </div>
+                {potwMixGames > 0 && (
+                  <div className="flex flex-col">
+                    <span className="text-[9px] uppercase tracking-widest text-zinc-500">Mix Rank</span>
+                    <span className="text-lg font-bold text-primary-dim font-mono drop-shadow-sm">#{potwMixRank || "?"} <span className="text-zinc-400">({potwMixElo})</span></span>
+                  </div>
+                )}
               </div>
             </div>
           </section>

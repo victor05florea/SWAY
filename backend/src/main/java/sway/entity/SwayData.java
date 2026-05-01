@@ -197,6 +197,8 @@ public class SwayData implements Serializable {
 
     @Transient
     private Integer serverRank;
+    @Transient
+    private Integer mixRank;
 
     public Integer getServerRank() {
         return serverRank;
@@ -204,6 +206,14 @@ public class SwayData implements Serializable {
 
     public void setServerRank(Integer serverRank) {
         this.serverRank = serverRank;
+    }
+
+    public Integer getMixRank() {
+        return mixRank;
+    }
+
+    public void setMixRank(Integer mixRank) {
+        this.mixRank = mixRank;
     }
 
 

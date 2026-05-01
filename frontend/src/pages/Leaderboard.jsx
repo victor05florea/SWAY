@@ -39,6 +39,44 @@ const steamToAccountId = (steamId) => {
   return idStr;
 };
 
+const steamToSteam2Z = (steamId) => {
+  if (!steamId) return "";
+  const idStr = String(steamId).trim();
+  if (idStr.toLowerCase().startsWith("steam_")) {
+    const parts = idStr.split(":");
+    if (parts.length === 3) {
+      return String(parts[2]);
+    }
+  }
+  return "";
+};
+
+const resolveJumpStats = (map, rawSteamId) => {
+  if (!rawSteamId) return null;
+  const raw = String(rawSteamId).trim().toLowerCase();
+  const candidates = [raw];
+
+  const accountId = steamToAccountId(rawSteamId);
+  if (accountId) candidates.push(String(accountId).toLowerCase());
+
+  const steam2z = steamToSteam2Z(rawSteamId);
+  if (steam2z) candidates.push(String(steam2z).toLowerCase());
+
+  if (/^\d+$/.test(raw)) {
+    const asNum = Number(raw);
+    if (Number.isFinite(asNum) && asNum > 0) {
+      candidates.push(String(Math.floor(asNum / 2)));
+      candidates.push(String(asNum * 2));
+      candidates.push(String(asNum * 2 + 1));
+    }
+  }
+
+  for (const key of candidates) {
+    if (map[key]) return map[key];
+  }
+  return null;
+};
+
 const parseNum = (val) => {
   if (val === null || val === undefined) return 0;
   const parsed = parseFloat(val);
@@ -95,6 +133,10 @@ const getJumpSync = (p, server, type) => {
 
 export default function Leaderboard() {
   const [players, setPlayers] = useState([]);
+  const [jumpPlayers, setJumpPlayers] = useState([]);
+  const [jumpDataLoaded, setJumpDataLoaded] = useState(false);
+  const [totalPlayers, setTotalPlayers] = useState(0);
+  const [totalPagesFromApi, setTotalPagesFromApi] = useState(1);
   const [loading, setLoading] = useState(true);
   
   const [mode, setMode] = useState("HNS"); 
@@ -110,51 +152,155 @@ export default function Leaderboard() {
   const itemsPerPage = 50;
 
   useEffect(() => {
-    const fetchData = () => {
-      Promise.all([
-        fetch('/api/players/all').then(res => res.json()),
-        fetch('/api/jumps/pre').then(res => res.ok ? res.json() : []).catch(() => []),
-        fetch('/api/jumps/nopre').then(res => res.ok ? res.json() : []).catch(() => []),
-        // Aducem și codații aici
-        fetch('/api/cheaters').then(res => res.ok ? res.json() : []).catch(() => [])
-      ])
-      .then(([playersData, preData, nopreData, cheatersData]) => {
-        const preMap = {};
-        preData.forEach(j => { if (j.steamid) preMap[steamToAccountId(j.steamid)] = j; });
+    if (mode === "JUMPS") return;
+    setLoading(true);
 
-        const nopreMap = {};
-        nopreData.forEach(j => { if (j.steamid) nopreMap[steamToAccountId(j.steamid)] = j; });
+    const sortMap = {
+      KILLS: "kills",
+      WEEKTIME: "time",
+      ELO: "mixelo",
+      GAMES: "mixgames",
+      WON: "mixwon",
+      DISCONNECTS: "mixdisconnects",
+      STABS: "mixtotalstabs"
+    };
 
-       const combinedPlayers = playersData.map(p => {
-          const accId = steamToAccountId(p.steamid || p.steamId);
-          
-          // Căutăm inteligent, trecând ambele SteamID-uri prin convertor
-          const foundCheater = cheatersData.find(c => {
-              const cheaterAccId = steamToAccountId(c.steamid || c.steamId);
-              return cheaterAccId === accId;
-          });
-          
-          return {
-            ...p,
-            jumpStatsPre: p.jumpStatsPre || preMap[accId] || null,
-            jumpStatsNoPre: p.jumpStatsNoPre || nopreMap[accId] || null,
-            cheaterInfo: foundCheater || null 
-          };
-        });
+    const sortBy = sortMap[sortOrder] || "kills";
+    const params = new URLSearchParams({
+      mode,
+      page: String(Math.max(currentPage - 1, 0)),
+      size: String(itemsPerPage),
+      sortBy,
+      direction: sortDirection,
+      search: searchTerm.trim()
+    });
 
-        setPlayers(combinedPlayers);
+    fetch(`/api/players/page?${params.toString()}`)
+      .then(res => {
+        if (!res.ok) throw new Error("Nu s-a putut încărca leaderboard.");
+        return res.json();
+      })
+      .then(data => {
+        if (!Array.isArray(data.content)) {
+          throw new Error("Răspuns invalid pentru leaderboard paginat.");
+        }
+        setPlayers(Array.isArray(data.content) ? data.content : []);
+        setTotalPlayers(Number(data.totalElements) || 0);
+        setTotalPagesFromApi(Math.max(Number(data.totalPages) || 1, 1));
         setLoading(false);
+
+        if (data.hasNext) {
+          const prefetchParams = new URLSearchParams({
+            mode,
+            page: String(Math.max(currentPage, 0)),
+            size: String(itemsPerPage),
+            sortBy,
+            direction: sortDirection,
+            search: searchTerm.trim()
+          });
+          fetch(`/api/players/page?${prefetchParams.toString()}`).catch(() => {});
+        }
       })
       .catch(err => {
         console.error("Eroare la aducerea datelor:", err);
+        // Fallback stil Hall of Shame: endpoint simplu, randare locală.
+        fetch('/api/players/all')
+          .then(res => res.ok ? res.json() : [])
+          .then(allPlayers => {
+            const term = searchTerm.trim().toLowerCase();
+            let filtered = Array.isArray(allPlayers) ? allPlayers : [];
+
+            if (mode === "MIX") {
+              filtered = filtered.filter(p => (p.mixgames || p.mixGames || 0) > 0);
+            }
+
+            if (term) {
+              filtered = filtered.filter(p => String(p.name || "").toLowerCase().includes(term));
+            }
+
+            const comparator = (a, b) => {
+              const dir = sortDirection === "ASC" ? 1 : -1;
+              if (mode === "MIX") {
+                if (sortOrder === "ELO") return ((a.mixelo || a.mixElo || 0) - (b.mixelo || b.mixElo || 0)) * dir;
+                if (sortOrder === "GAMES") return ((a.mixgames || a.mixGames || 0) - (b.mixgames || b.mixGames || 0)) * dir;
+                if (sortOrder === "WON") return ((a.mixwon || a.mixWon || 0) - (b.mixwon || b.mixWon || 0)) * dir;
+                if (sortOrder === "DISCONNECTS") return ((a.mixdisconnects || a.mixDisconnects || 0) - (b.mixdisconnects || b.mixDisconnects || 0)) * dir;
+                if (sortOrder === "STABS") return ((a.mixtotalstabs || a.mixTotalStabs || 0) - (b.mixtotalstabs || b.mixTotalStabs || 0)) * dir;
+              }
+              if (sortOrder === "WEEKTIME") return ((a.time || a.weektime || 0) - (b.time || b.weektime || 0)) * dir;
+              return ((a.kills || 0) - (b.kills || 0)) * dir;
+            };
+
+            filtered = [...filtered].sort(comparator);
+            const localTotal = filtered.length;
+            const from = Math.max(currentPage - 1, 0) * itemsPerPage;
+            const pageItems = filtered.slice(from, from + itemsPerPage);
+
+            setPlayers(pageItems);
+            setTotalPlayers(localTotal);
+            setTotalPagesFromApi(Math.max(Math.ceil(localTotal / itemsPerPage), 1));
+            setLoading(false);
+          })
+          .catch(() => {
+            setPlayers([]);
+            setTotalPlayers(0);
+            setTotalPagesFromApi(1);
+            setLoading(false);
+          });
+      });
+  }, [mode, currentPage, sortOrder, sortDirection, searchTerm]);
+
+  useEffect(() => {
+    if (mode !== "JUMPS" || jumpDataLoaded) return;
+    setLoading(true);
+    Promise.all([
+      fetch('/api/players/all').then(res => res.json()),
+      fetch('/api/jumps/pre').then(res => res.ok ? res.json() : []).catch(() => []),
+      fetch('/api/jumps/nopre').then(res => res.ok ? res.json() : []).catch(() => []),
+      fetch('/api/cheaters').then(res => res.ok ? res.json() : []).catch(() => [])
+    ])
+      .then(([playersData, preData, nopreData, cheatersData]) => {
+        const preMap = {};
+        preData.forEach(j => {
+          if (!j.steamid) return;
+          const accountId = steamToAccountId(j.steamid);
+          const steam2z = steamToSteam2Z(j.steamid);
+          if (accountId) preMap[String(accountId).toLowerCase()] = j;
+          if (steam2z) preMap[String(steam2z).toLowerCase()] = j;
+          preMap[String(j.steamid).toLowerCase()] = j;
+        });
+
+        const nopreMap = {};
+        nopreData.forEach(j => {
+          if (!j.steamid) return;
+          const accountId = steamToAccountId(j.steamid);
+          const steam2z = steamToSteam2Z(j.steamid);
+          if (accountId) nopreMap[String(accountId).toLowerCase()] = j;
+          if (steam2z) nopreMap[String(steam2z).toLowerCase()] = j;
+          nopreMap[String(j.steamid).toLowerCase()] = j;
+        });
+
+        const combinedPlayers = playersData.map(p => {
+          const rawPlayerSteam = p.steamid || p.steamId;
+          const accId = steamToAccountId(rawPlayerSteam);
+          const foundCheater = cheatersData.find(c => steamToAccountId(c.steamid || c.steamId) === accId);
+          return {
+            ...p,
+            jumpStatsPre: p.jumpStatsPre || resolveJumpStats(preMap, rawPlayerSteam) || null,
+            jumpStatsNoPre: p.jumpStatsNoPre || resolveJumpStats(nopreMap, rawPlayerSteam) || null,
+            cheaterInfo: foundCheater || null
+          };
+        });
+
+        setJumpPlayers(combinedPlayers);
+        setJumpDataLoaded(true);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Eroare la aducerea datelor jumps:", err);
         setLoading(false);
       });
-    };
-
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  }, [mode, jumpDataLoaded]);
 
   useEffect(() => {
     if (mode === "HNS") setSortOrder("KILLS");
@@ -168,61 +314,37 @@ export default function Leaderboard() {
 
   // OPTIMIZARE: Folosim useMemo pentru ca React să nu mai blocheze UI-ul procesând 10.000 de iteme degeaba
   const processedData = useMemo(() => {
-    let baseData = players;
-    
-    if (mode === "MIX") {
-      baseData = baseData.filter(p => (p.mixgames || p.mixGames || 0) > 0);
-    } else if (mode === "JUMPS") {
-      baseData = baseData.filter(p => getJumpDistance(p, jumpServer, jumpType) > 0);
+    if (mode !== "JUMPS") {
+      return players.map((p, index) => ({
+        ...p,
+        trueRank: ((currentPage - 1) * itemsPerPage) + index + 1
+      }));
     }
 
-    baseData = [...baseData].sort((a, b) => {
-      let valA = 0; let valB = 0;
-      
-      if (mode === "HNS") {
-        if (sortOrder === "KILLS") { valA = a.kills || 0; valB = b.kills || 0; } 
-        else if (sortOrder === "WEEKTIME") { valA = a.time || a.weektime || 0; valB = b.time || b.weektime || 0; }
-      } else if (mode === "MIX") {
-        if (sortOrder === "ELO") { valA = a.mixelo || a.mixElo || 0; valB = b.mixelo || b.mixElo || 0; } 
-        else if (sortOrder === "GAMES") { valA = a.mixgames || a.mixGames || 0; valB = b.mixgames || b.mixGames || 0; } 
-        else if (sortOrder === "WON") { valA = a.mixwon || a.mixWon || 0; valB = b.mixwon || b.mixWon || 0; } 
-        else if (sortOrder === "DISCONNECTS") { valA = a.mixdisconnects || a.mixDisconnects || 0; valB = b.mixdisconnects || b.mixDisconnects || 0; } 
-        else if (sortOrder === "STABS") { valA = a.mixtotalstabs || a.mixTotalStabs || 0; valB = b.mixtotalstabs || b.mixTotalStabs || 0; }
-      } else if (mode === "JUMPS") {
-        valA = getJumpDistance(a, jumpServer, jumpType);
-        valB = getJumpDistance(b, jumpServer, jumpType);
-        return valB - valA; 
-      }
+    let baseData = [...jumpPlayers];
+    baseData = baseData.filter(p => getJumpDistance(p, jumpServer, jumpType) > 0);
+    baseData = baseData.sort((a, b) => getJumpDistance(b, jumpServer, jumpType) - getJumpDistance(a, jumpServer, jumpType));
 
-      if (mode !== "JUMPS") {
-        return sortDirection === "DESC" ? valB - valA : valA - valB;
-      }
-      return 0;
-    });
+    const term = searchTerm.trim().toLowerCase();
+    if (term) {
+      baseData = baseData.filter(p => {
+        const pName = String(p.name || "").toLowerCase();
+        const pSteamId = String(p.steamid || p.steamId || "").toLowerCase();
+        const calculated64 = getSteamId64(pSteamId);
+        return pName.includes(term) || pSteamId.includes(term) || calculated64.includes(term);
+      });
+    }
 
-    baseData = baseData.map((p, index) => ({ ...p, trueRank: index + 1 }));
+    return baseData.map((p, index) => ({ ...p, trueRank: index + 1 }));
+  }, [players, jumpPlayers, mode, searchTerm, currentPage, jumpServer, jumpType]);
 
-    return baseData.filter(p => {
-      const term = searchTerm.trim().toLowerCase();
-      if (!term) return true;
-
-      const pName = String(p.name || "").toLowerCase();
-      const pSteamId = String(p.steamid || p.steamId || "").toLowerCase();
-      const calculated64 = getSteamId64(pSteamId);
-      
-      const urlMatch = term.match(/\d{17}/);
-      const search64 = urlMatch ? urlMatch[0] : "";
-
-      return pName.includes(term) || 
-             pSteamId.includes(term) || 
-             calculated64.includes(term) ||
-             (search64 && calculated64 === search64);
-    });
-  }, [players, mode, searchTerm, sortOrder, sortDirection, jumpServer, jumpType]);
-
-  const totalPages = Math.ceil(processedData.length / itemsPerPage) || 1;
+  const totalPages = mode === "JUMPS"
+    ? (Math.ceil(processedData.length / itemsPerPage) || 1)
+    : totalPagesFromApi;
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentPlayers = processedData.slice(startIndex, startIndex + itemsPerPage);
+  const currentPlayers = mode === "JUMPS"
+    ? processedData.slice(startIndex, startIndex + itemsPerPage)
+    : processedData;
 
   const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
   const goToPrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
@@ -288,7 +410,7 @@ export default function Leaderboard() {
             Server <span className="text-primary-dim">Rankings</span>
           </h1>
           <p className="text-[16px] text-gray-500 font-headline tracking-[0.1em] uppercase mt-2">
-            <span className="text-primary-dim">{players.length}</span> unique players
+            <span className="text-primary-dim">{mode === "JUMPS" ? jumpPlayers.length : totalPlayers}</span> unique players
           </p>
         </div>
         
@@ -440,7 +562,7 @@ export default function Leaderboard() {
                   {mode === "HNS" && (
                     <>
                       <td className="px-6 py-5 text-center font-bold text-gray-300">{formatNumber(player.kills)}</td>
-                      <td className="px-6 py-5 text-right font-bold text-white">{((player.time || player.weektime || 0) / 3600).toFixed(1)} <span className="text-xs text-gray-600 ml-1">HRS</span></td>
+                      <td className="px-6 py-5 text-right font-bold text-white">{Math.floor((player.time || player.weektime || 0) / 3600)} <span className="text-xs text-gray-600 ml-1">HRS</span></td>
                     </>
                   )}
 
@@ -474,7 +596,7 @@ export default function Leaderboard() {
           </tbody>
         </table>
         {!loading && currentPlayers.length === 0 && (
-          <div className="w-full py-16 text-center"><p className="font-headline text-primary-dim text-xl uppercase tracking-widest">No matching records found.</p></div>
+          <div className="w-full py-16 text-center"><p className="font-headline text-primary-dim text-xl uppercase tracking-widest">No players found.</p></div>
         )}
       </div>
 

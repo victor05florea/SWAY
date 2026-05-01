@@ -1,7 +1,10 @@
 package sway.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import sway.entity.ServerUtility;
@@ -12,6 +15,8 @@ import sway.repository.JumpStatPreRepository;
 import sway.repository.JumpStatNoPreRepository;
 
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @CrossOrigin(origins = {"https://sway.ovh", "http://localhost:5173"})
@@ -34,13 +39,11 @@ public class SwayDataController {
     // --- RUTE VECHI (Păstrate pentru compatibilitate) ---
 
     @GetMapping("/all")
-    @Cacheable("players-all")
     public List<SwayData> getAllPlayers() {
         return swayDataRepository.findAll();
     }
 
     @GetMapping("/status")
-    @Cacheable("players-status")
     public List<ServerUtility> getServersStatus() {
         return serverUtilityRepository.findAll();
     }
@@ -50,9 +53,49 @@ public class SwayDataController {
 
     // 1. Returnează doar numărul total de jucători
     @GetMapping("/count")
-    @Cacheable("players-count")
     public long getTotalPlayers() {
         return swayDataRepository.count();
+    }
+
+    @GetMapping("/page")
+    public ResponseEntity<Map<String, Object>> getPlayersPage(
+            @RequestParam(defaultValue = "HNS") String mode,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
+            @RequestParam(defaultValue = "kills") String sortBy,
+            @RequestParam(defaultValue = "DESC") String direction,
+            @RequestParam(defaultValue = "") String search
+    ) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        Sort sort = buildSort(sortBy, direction);
+        Pageable pageable = PageRequest.of(safePage, safeSize, sort);
+        String safeSearch = search == null ? "" : search.trim();
+
+        Page<SwayData> resultPage;
+        if ("MIX".equalsIgnoreCase(mode)) {
+            if (safeSearch.isEmpty()) {
+                resultPage = swayDataRepository.findByMixgamesGreaterThan(0, pageable);
+            } else {
+                resultPage = swayDataRepository.findByNameContainingIgnoreCaseAndMixgamesGreaterThan(safeSearch, 0, pageable);
+            }
+        } else {
+            if (safeSearch.isEmpty()) {
+                resultPage = swayDataRepository.findAll(pageable);
+            } else {
+                resultPage = swayDataRepository.findByNameContainingIgnoreCase(safeSearch, pageable);
+            }
+        }
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("content", resultPage.getContent());
+        payload.put("page", resultPage.getNumber());
+        payload.put("size", resultPage.getSize());
+        payload.put("totalElements", resultPage.getTotalElements());
+        payload.put("totalPages", resultPage.getTotalPages());
+        payload.put("hasNext", resultPage.hasNext());
+        payload.put("hasPrevious", resultPage.hasPrevious());
+        return ResponseEntity.ok(payload);
     }
 
     // 2. Returnează instant Player of the Week (bazat pe weektime)
@@ -64,6 +107,13 @@ public class SwayDataController {
             int kills = potw.getKills() != null ? potw.getKills() : 0;
             int rank = swayDataRepository.countByKillsGreaterThan(kills) + 1;
             potw.setServerRank(rank);
+            int mixGames = potw.getMixgames() != null ? potw.getMixgames() : 0;
+            if (mixGames > 0) {
+                int mixElo = potw.getMixelo() != null ? potw.getMixelo() : 0;
+                potw.setMixRank(swayDataRepository.countByMixeloGreaterThan(mixElo) + 1);
+            } else {
+                potw.setMixRank(null);
+            }
             return ResponseEntity.ok(potw);
         }
         return ResponseEntity.notFound().build();
@@ -187,21 +237,81 @@ public class SwayDataController {
             return;
         }
 
-        String directId = "STEAM_1:0:" + steamNumeric;
-        preRepo.findBySteamid(directId).ifPresent(player::setJumpStatsPre);
-        noPreRepo.findBySteamid(directId).ifPresent(player::setJumpStatsNoPre);
+        tryAttachJumpStats(player, steamNumeric);
 
         if (player.getJumpStatsPre() == null || player.getJumpStatsNoPre() == null) {
             int halfId = steamNumeric / 2;
             if (halfId > 0 && halfId != steamNumeric) {
-                String halfBasedId = "STEAM_1:0:" + halfId;
-                if (player.getJumpStatsPre() == null) {
-                    preRepo.findBySteamid(halfBasedId).ifPresent(player::setJumpStatsPre);
-                }
-                if (player.getJumpStatsNoPre() == null) {
-                    noPreRepo.findBySteamid(halfBasedId).ifPresent(player::setJumpStatsNoPre);
-                }
+                tryAttachJumpStats(player, halfId);
             }
         }
+    }
+
+    private void tryAttachJumpStats(SwayData player, int numericId) {
+        if (numericId <= 0) {
+            return;
+        }
+
+        String steam10 = "STEAM_1:0:" + numericId;
+        String steam11 = "STEAM_1:1:" + numericId;
+        String numericAsString = String.valueOf(numericId);
+
+        if (player.getJumpStatsPre() == null) {
+            preRepo.findBySteamid(steam10).ifPresent(player::setJumpStatsPre);
+        }
+        if (player.getJumpStatsPre() == null) {
+            preRepo.findBySteamid(steam11).ifPresent(player::setJumpStatsPre);
+        }
+        if (player.getJumpStatsPre() == null) {
+            preRepo.findBySteamid(numericAsString).ifPresent(player::setJumpStatsPre);
+        }
+
+        if (player.getJumpStatsNoPre() == null) {
+            noPreRepo.findBySteamid(steam10).ifPresent(player::setJumpStatsNoPre);
+        }
+        if (player.getJumpStatsNoPre() == null) {
+            noPreRepo.findBySteamid(steam11).ifPresent(player::setJumpStatsNoPre);
+        }
+        if (player.getJumpStatsNoPre() == null) {
+            noPreRepo.findBySteamid(numericAsString).ifPresent(player::setJumpStatsNoPre);
+        }
+    }
+
+    private Sort buildSort(String sortBy, String direction) {
+        String normalized = sortBy == null ? "kills" : sortBy.trim().toLowerCase();
+        String property;
+        switch (normalized) {
+            case "time":
+            case "weektime":
+                property = "time";
+                break;
+            case "mixelo":
+            case "elo":
+                property = "mixelo";
+                break;
+            case "mixgames":
+            case "games":
+                property = "mixgames";
+                break;
+            case "mixwon":
+            case "won":
+                property = "mixwon";
+                break;
+            case "mixdisconnects":
+            case "disconnects":
+                property = "mixdisconnects";
+                break;
+            case "mixtotalstabs":
+            case "stabs":
+                property = "mixtotalstabs";
+                break;
+            case "kills":
+            default:
+                property = "kills";
+                break;
+        }
+
+        Sort.Direction sortDirection = "ASC".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        return Sort.by(sortDirection, property);
     }
 }

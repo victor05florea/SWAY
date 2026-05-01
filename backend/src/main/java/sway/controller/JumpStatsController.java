@@ -1,7 +1,6 @@
 package sway.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,13 +24,11 @@ public class JumpStatsController {
     private JumpStatNoPreRepository nopreRepo;
 
     @GetMapping("/pre")
-    @Cacheable("jumps-pre")
     public List<JumpStatPre> getAllPreJumps() {
         return preRepo.findAll();
     }
 
     @GetMapping("/nopre")
-    @Cacheable("jumps-nopre")
     public List<JumpStatNoPre> getAllNoPreJumps() {
         return nopreRepo.findAll();
     }

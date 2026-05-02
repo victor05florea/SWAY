@@ -12,7 +12,6 @@ const getSteamId64 = (rawId) => {
       if (parts.length === 3) {
         const y = BigInt(parts[1]);
         const z = BigInt(parts[2]);
-        // Am înlocuit 2n cu BigInt(2)
         return ((z * BigInt(2)) + y + steam64Base).toString(); 
       }
     }
@@ -165,7 +164,10 @@ export default function Leaderboard() {
       STABS: "mixtotalstabs"
     };
 
-    const sortBy = sortMap[sortOrder] || "kills";
+    // Fallback puternic pentru MIX
+    const fallbackSort = mode === "MIX" ? "mixelo" : "kills";
+    const sortBy = sortMap[sortOrder] || fallbackSort;
+    
     const params = new URLSearchParams({
       mode,
       page: String(Math.max(currentPage - 1, 0)),
@@ -184,7 +186,7 @@ export default function Leaderboard() {
         if (!Array.isArray(data.content)) {
           throw new Error("Răspuns invalid pentru leaderboard paginat.");
         }
-        setPlayers(Array.isArray(data.content) ? data.content : []);
+        setPlayers(data.content);
         setTotalPlayers(Number(data.totalElements) || 0);
         setTotalPagesFromApi(Math.max(Number(data.totalPages) || 1, 1));
         setLoading(false);
@@ -221,11 +223,12 @@ export default function Leaderboard() {
             const comparator = (a, b) => {
               const dir = sortDirection === "ASC" ? 1 : -1;
               if (mode === "MIX") {
-                if (sortOrder === "ELO") return ((a.mixelo || a.mixElo || 0) - (b.mixelo || b.mixElo || 0)) * dir;
-                if (sortOrder === "GAMES") return ((a.mixgames || a.mixGames || 0) - (b.mixgames || b.mixGames || 0)) * dir;
-                if (sortOrder === "WON") return ((a.mixwon || a.mixWon || 0) - (b.mixwon || b.mixWon || 0)) * dir;
-                if (sortOrder === "DISCONNECTS") return ((a.mixdisconnects || a.mixDisconnects || 0) - (b.mixdisconnects || b.mixDisconnects || 0)) * dir;
-                if (sortOrder === "STABS") return ((a.mixtotalstabs || a.mixTotalStabs || 0) - (b.mixtotalstabs || b.mixTotalStabs || 0)) * dir;
+                const getVal = (obj, key1, key2) => Number(obj[key1] || obj[key2] || 0);
+                if (sortOrder === "ELO" || !sortMap[sortOrder]) return (getVal(a, 'mixelo', 'mixElo') - getVal(b, 'mixelo', 'mixElo')) * dir;
+                if (sortOrder === "GAMES") return (getVal(a, 'mixgames', 'mixGames') - getVal(b, 'mixgames', 'mixGames')) * dir;
+                if (sortOrder === "WON") return (getVal(a, 'mixwon', 'mixWon') - getVal(b, 'mixwon', 'mixWon')) * dir;
+                if (sortOrder === "DISCONNECTS") return (getVal(a, 'mixdisconnects', 'mixDisconnects') - getVal(b, 'mixdisconnects', 'mixDisconnects')) * dir;
+                if (sortOrder === "STABS") return (getVal(a, 'mixtotalstabs', 'mixTotalStabs') - getVal(b, 'mixtotalstabs', 'mixTotalStabs')) * dir;
               }
               if (sortOrder === "WEEKTIME") return ((a.time || a.weektime || 0) - (b.time || b.weektime || 0)) * dir;
               return ((a.kills || 0) - (b.kills || 0)) * dir;
@@ -303,16 +306,9 @@ export default function Leaderboard() {
   }, [mode, jumpDataLoaded]);
 
   useEffect(() => {
-    if (mode === "HNS") setSortOrder("KILLS");
-    if (mode === "MIX") setSortOrder("ELO");
-    if (mode === "JUMPS") setJumpType("LONGJUMP");
-  }, [mode]);
-
-  useEffect(() => {
     setCurrentPage(1);
-  }, [mode, searchTerm, sortOrder, sortDirection, jumpServer, jumpType]);
+  }, [searchTerm, sortOrder, sortDirection, jumpServer, jumpType]);
 
-  // OPTIMIZARE: Folosim useMemo pentru ca React să nu mai blocheze UI-ul procesând 10.000 de iteme degeaba
   const processedData = useMemo(() => {
     if (mode !== "JUMPS") {
       return players.map((p, index) => ({
@@ -415,9 +411,9 @@ export default function Leaderboard() {
         </div>
         
         <div className="flex bg-surface-container-low border border-white/10 p-1.5 rounded-sm overflow-x-auto">
-           <button onClick={() => setMode("HNS")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "HNS" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Public HNS</button>
-           <button onClick={() => setMode("MIX")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "MIX" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Competitive Mix</button>
-           <button onClick={() => setMode("JUMPS")} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "JUMPS" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Jump Stats</button>
+           <button onClick={() => { setSortOrder("KILLS"); setSortDirection("DESC"); setCurrentPage(1); setMode("HNS"); }} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "HNS" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Public HNS</button>
+           <button onClick={() => { setSortOrder("ELO"); setSortDirection("DESC"); setCurrentPage(1); setMode("MIX"); }} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "MIX" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Competitive Mix</button>
+           <button onClick={() => { setJumpType("LONGJUMP"); setCurrentPage(1); setMode("JUMPS"); }} className={`px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-all ${mode === "JUMPS" ? "bg-primary-dim text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>Jump Stats</button>
         </div>
       </div>
 
@@ -500,7 +496,7 @@ export default function Leaderboard() {
                 <>
                   <th className="px-6 py-4 text-center text-primary-dim">Distance</th>
                   <th className="px-6 py-4 text-center">Strafes</th>
-                  <th className="px-6 py-4 text-right">Sync</th>
+                  <th className="px-6 py-4 text-center">Sync</th>
                 </>
               )}
             </tr>

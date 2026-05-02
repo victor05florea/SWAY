@@ -11,7 +11,7 @@ export default function Profile() {
   const [jumpMode, setJumpMode] = useState("PRE");
   const [mixRank, setMixRank] = useState("UNRANKED");
   const [cheaterInfo, setCheaterInfo] = useState(null);
-  const [barAnim, setBarAnim] = useState(false); // State pentru animatia barelor de progres
+  const [barAnim, setBarAnim] = useState(false);
 
   useEffect(() => {
     if (!id || id === "undefined") {
@@ -71,7 +71,6 @@ export default function Profile() {
 
   }, [id]);
 
-  // Declanseaza animatia barelor la incarcarea datelor jucatorului
   useEffect(() => {
     if (!loading && player) {
       const timer = setTimeout(() => setBarAnim(true), 300);
@@ -88,9 +87,11 @@ export default function Profile() {
 
   const kdRatio = (player.kills / (player.deaths || 1)).toFixed(2);
   const hasMixStats = (player.mixgames || player.mixGames || 0) > 0;
+  
   const showFirstName = Boolean(
     player.firstname &&
-    String(player.firstname).trim() &&
+    String(player.firstname).trim() !== "" &&
+    String(player.firstname).trim().toLowerCase() !== "null" &&
     String(player.firstname).trim().toLowerCase() !== String(player.name || "").trim().toLowerCase()
   );
 
@@ -177,7 +178,6 @@ export default function Profile() {
     { abbr: "LJB", label: "LJ Block", dist: stats.lbrRecord, max: stats.lbrMax, height: stats.lbrHeight, pre: stats.lbrPre, str: stats.lbrStrafes, sync: stats.lbrSync },
   ];
 
-  // Functia pentru determinarea culorii pe baza tipului si distantei
   const getJumpColor = (type, dist) => {
     const d = parseFloat(dist);
     if (!d || d === 0) return "text-white";
@@ -197,7 +197,7 @@ export default function Profile() {
     if (d >= t.ownage) return "text-yellow-500";
     if (d >= t.leet) return "text-red-600";
     if (d >= t.pro) return "text-green-500";
-    return "text-gray-400"; // Good
+    return "text-gray-400"; 
   };
 
   const getBanStatus = (bannedVal) => {
@@ -226,19 +226,20 @@ export default function Profile() {
             <div className="flex-1 text-center md:text-left space-y-2 min-w-0">
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
                  <span title={player.name} className="font-headline text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter text-white uppercase leading-none break-all max-w-full">{player.name}</span>
+                 
                  {showFirstName && (
-                   <div className="group relative inline-flex items-center justify-center">
-                     <span className="flex items-center justify-center w-5 h-5 text-gray-400 hover:text-white transition-all cursor-default opacity-70 hover:opacity-100">
-                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-full h-full" fill="currentColor">
-                         <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM216 336h24V272H216c-13.3 0-24-10.7-24-24s10.7-24 24-24h48c13.3 0 24 10.7 24 24v88h8c13.3 0 24 10.7 24 24s-10.7 24-24 24H216c-13.3 0-24-10.7-24-24s10.7-24 24-24zm40-208a32 32 0 1 1 0 64 32 32 0 1 1 0-64z"/>
-                       </svg>
-                     </span>
-                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 bg-[#0a0a0a] border border-gray-600 px-5 py-2.5 rounded shadow-[0_0_20px_rgba(0,0,0,1)] z-[999] w-max max-w-[300px] text-center pointer-events-none">
-                        <p className="font-headline text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1 border-b border-white/5 pb-1">First name</p>
-                        <p className="font-headline text-sm text-white pt-1">{player.firstname}</p>
+                   <div className="group relative flex items-center justify-center cursor-help mt-1 md:mt-2">
+                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-5 h-5 md:w-6 md:h-6 text-gray-500 hover:text-white transition-colors duration-200" fill="currentColor">
+                       <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM216 336h24V272H216c-13.3 0-24-10.7-24-24s10.7-24 24-24h48c13.3 0 24 10.7 24 24v88h8c13.3 0 24 10.7 24 24s-10.7 24-24 24H216c-13.3 0-24-10.7-24-24s10.7-24 24-24zm40-208a32 32 0 1 0 0-64 32 32 0 1 0 0 64z"/>
+                     </svg>
+                     <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 bg-black/60 backdrop-blur-md border border-white/10 px-5 py-2.5 rounded-sm shadow-[0_5px_15px_rgba(0,0,0,0.5)] z-[999] w-max min-w-[120px] text-center">
+                        <p className="font-headline text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1.5 border-b border-white/10 pb-1">Real Name</p>
+                        <p className="font-headline text-sm text-white drop-shadow-md">{player.firstname}</p>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-white/10"></div>
                      </div>
                    </div>
                  )}
+
                  {player.country && player.country.toLowerCase() !== 'un' && (
                     <img src={`/countryflags/${player.country.toLowerCase()}.gif`} alt={player.country} loading="lazy" className="w-8 h-auto rounded-[2px] shadow-sm mb-1 opacity-90 shrink-0" onError={(e) => { e.target.style.display = 'none'; }} />
                  )}
@@ -246,7 +247,9 @@ export default function Profile() {
               <div className="flex flex-col gap-2 mt-4">
                 <span className="font-headline text-primary-dim tracking-[0.2em] text-sm md:text-base font-bold uppercase">Server Rank: #{player.serverRank || 'Unranked'}</span>
                 {hasMixStats && (
-                  <span className="font-headline text-gray-400 tracking-[0.2em] text-xs font-bold uppercase mb-2">Mix elo: <span className="text-white">{player.mixelo || player.mixElo || 0}</span> <span className="text-primary-dim">({mixRank})</span></span>
+                  <span className="font-headline text-gray-400 tracking-[0.2em] text-xs font-bold uppercase mb-2">
+                    Mix elo: <span className="text-yellow-500">{player.mixelo || player.mixElo || 0}</span> <span className="text-yellow-500">({mixRank})</span>
+                  </span>
                 )}
                 <div className="flex justify-center md:justify-start gap-2 text-left">
                     {getRoles().map(role => <span key={role.name} className={`text-[10px] px-2 py-0.5 border font-bold tracking-widest ${role.style}`}>{role.name}</span>)}
@@ -317,48 +320,50 @@ export default function Profile() {
             <div className="flex items-center justify-between border-b border-outline-variant/10 pb-4 mb-6">
               <h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-primary-dim">Mix Competitive Stats</h3>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-6 text-center items-center">
-              <div className="space-y-1">
+            
+            {/* Cele 6 elemente distribuite pe toata latimea div-ului */}
+            <div className="flex flex-wrap lg:flex-nowrap justify-between w-full items-center gap-6 lg:gap-2 text-center">
+              <div className="flex-1 space-y-1">
                 <p className="font-headline text-gray-500 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-6 h-6 shrink-0" fill="currentColor"><path d="M380.95 114.46c-62.946-13.147-63.32 32.04-124.868 32.04-53.25 0-55.247-44.675-124.87-32.04C17.207 135.072-.32 385.9 60.16 399.045c33.578 7.295 50.495-31.644 94.89-59.593a51.562 51.562 0 0 0 79.77-25.78 243.665 243.665 0 0 1 21.24-.91c7.466 0 14.44.32 21.126.898a51.573 51.573 0 0 0 79.82 25.717c44.45 27.95 61.367 66.93 94.955 59.626 60.47-13.104 42.496-260.845-71.01-284.543zM147.47 242.703h-26.144V216.12H94.73v-26.143h26.594v-26.593h26.144v26.582h26.582v26.144h-26.582v26.582zm38.223 89.615a34.336 34.336 0 1 1 34.337-34.336 34.336 34.336 0 0 1-34.325 34.346zm140.602 0a34.336 34.336 0 1 1 34.367-34.325 34.336 34.336 0 0 1-34.368 34.335zM349.98 220.36a17.323 17.323 0 1 1 17.32-17.32 17.323 17.323 0 0 1-17.323 17.323zm37.518 37.52a17.323 17.323 0 1 1 17.322-17.324 17.323 17.323 0 0 1-17.365 17.334zm0-75.048a17.323 17.323 0 1 1 17.322-17.323 17.323 17.323 0 0 1-17.365 17.333zm37.518 37.518a17.323 17.323 0 1 1 17.323-17.323 17.323 17.323 0 0 1-17.367 17.334z"/></svg>
                   Mix Games
                 </p>
                 <p className="font-headline text-[26px] md:text-3xl font-bold text-white tabular-nums">{formatNumber(player.mixgames || player.mixGames)}</p>
               </div>
-              <div className="space-y-1">
+              <div className="flex-1 space-y-1">
                 <p className="font-headline text-gray-500 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 481.882 481.882" className="w-6 h-6 shrink-0" fill="currentColor"><path d="M329.256,209.796c38.917-12.802,110.205-64.102,110.205-132.358c0-33.41-28.561-60.504-62.347-57.796c0.081-2.285,0.202-4.551,0.236-6.842c0-3.388-1.28-6.626-3.689-9.035C371.252,1.279,368.014,0,364.626,0H117.285c-3.388,0-6.626,1.279-9.035,3.765c-2.409,2.409-3.689,5.647-3.689,9.035c0.033,2.259,0.089,4.532,0.158,6.843c-33.776-2.665-62.297,24.4-62.297,57.795c0,68.272,71.322,119.581,110.233,132.366c14.62,24.177,31.308,41.664,49.562,51.918c-1.431,5.421-1.656,10.315-1.656,10.39c0,0.226,0.828,13.252,6.776,19.728v18.748c-17.035,4.695-28.402,12.643-32.331,22.287h-22.634c-4.216,0-7.529,3.388-7.529,7.529v106.09h-5.497c-4.216,0-7.529,3.387-7.529,7.529v20.329c0,4.142,3.313,7.529,7.529,7.529h203.219c4.141,0,7.529-3.387,7.529-7.529v-20.329c0-4.142-3.388-7.529-7.529-7.529h-5.496v-106.09c0-4.142-3.388-7.529-7.529-7.529h-22.701c-3.909-9.644-15.229-17.592-32.264-22.287v-18.598c5.873-6.4,6.776-19.652,6.776-19.878c0-0.075-0.301-4.969-1.656-10.315C297.95,251.469,314.571,233.976,329.256,209.796z M57.48,77.438c0-23.713,19.294-43.007,43.007-43.007c1.611,0,3.259,0.113,4.927,0.318c0.143,2.597,0.255,5.195,0.425,7.791c3.646,55.075,15.929,105.474,35.264,145.899C107.019,170.932,57.48,129.943,57.48,77.438z M376.07,42.54c0.167-2.548,0.327-5.131,0.468-7.796c1.644-0.2,3.269-0.314,4.857-0.314c23.713,0,43.007,19.294,43.007,43.007c0,52.487-49.504,93.466-83.589,110.985C360.142,148.002,372.35,97.608,376.07,42.54z M299.417,370.548v53.375H182.465v-53.375H299.417z M273.63,223.114l-8.735-12.265c9.988-7.118,19.982-18.882,28.901-34.029c2.595-4.411,5.051-9,7.297-13.618c16.139-33.199,26.757-77.169,29.901-123.823c0.143-2.213,0.279-4.441,0.404-6.794l15.037,0.779c-0.125,2.426-0.269,4.713-0.416,7.007c-3.272,48.559-14.416,94.515-31.383,129.412c-2.415,4.971-5.062,9.912-7.86,14.677C296.789,201.416,285.329,214.783,273.63,223.114z"/></svg>
                   Mix Won
                 </p>
-                <p className="font-headline text-[26px] md:text-3xl font-bold text-emerald-400 tabular-nums">{formatNumber(player.mixwon || player.mixWon)}</p>
+                <p className="font-headline text-[26px] md:text-3xl font-bold text-green-500 tabular-nums">{formatNumber(player.mixwon || player.mixWon)}</p>
               </div>
-              <div className="space-y-1 flex flex-col justify-center">
+              <div className="flex-1 space-y-1 flex flex-col justify-center">
                 <p className="font-headline text-gray-500 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-6 h-6 shrink-0" fill="currentColor"><path d="M372.48 31.215c-77.65 0-116.48 65.73-116.48 65.73s-38.83-65.72-116.48-65.72c-37.14 0-107.77 33.72-107.77 125.13 0 161.24 224.25 324.43 224.25 324.43s224.25-163.19 224.25-324.43c0-91.42-70.63-125.13-107.77-125.14zM160 129h192v18H160v-18zm23 31h18v176h-18V160zm33 0h80s-8 80-40 80-40-80-40-80zm95 0h18v176h-18V160zm-55 96c32 0 40 80 40 80h-80s8-80 40-80zm-96 93h192v18H160v-18z"/></svg>
                   Time Alive
                 </p>
                 <p className="font-headline text-[26px] md:text-3xl font-bold text-white flex justify-center items-baseline tabular-nums">{renderTime(player.mixtotaltime || player.mixTotalTime, "text-white")}</p>
               </div>
-              <div className="space-y-1">
+              <div className="flex-1 space-y-1">
                 <p className="font-headline text-gray-500 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 57.589 57.589" className="w-6 h-6 shrink-0" fill="currentColor"><circle cx="14.743" cy="7.173" r="4.375"/><path d="M27.007,26.171c2.925,0.243,3.82-4.268,0.874-4.514c-4.583-0.382-8.752-1.636-10.061-5.859c-0.037-0.119-0.087-0.219-0.136-0.322c-0.465-2.581-2.771-3.485-4.896-3.053c-0.097-0.023-0.19-0.051-0.294-0.063c-5.421-0.623-10.147,2.135-12.287,7.152c-1.148,2.694,2.81,5.038,3.969,2.319c1.064-2.494,2.655-4.044,4.8-4.653c0.003,0.052,0.001,0.102,0.006,0.154c0,0-2.022,7.993-2.939,12.867c-0.461,0.735-0.61,1.364-0.538,1.905L0.397,51.3c-1.208,3.148,3.67,5.013,4.874,1.871L9.67,36.544c2.619,1.072,5.04,2.527,6.149,5.277c1.1,2.727-0.64,6.207-1.979,8.489c-1.689,2.879,2.535,5.948,4.24,3.045c2.329-3.972,4.146-8.56,2.662-13.163c-1.114-3.451-3.788-5.79-6.868-7.434l2.493-10.804C19.019,24.494,22.923,25.83,27.007,26.171z"/><path d="M57.427,31.395c-1.733-6.634-5.365-12.496-10.436-17.101c-1.777-1.615-3.821-1.332-5.266-0.188c-4.646-0.862-9.287-1.725-13.935-2.587c-3.253-0.604-4.19,4.439-0.937,5.044c4.403,0.817,8.802,1.635,13.206,2.452c0.215,0.673,0.621,1.325,1.265,1.909c3.188,2.897,5.433,6.381,6.903,10.309c-7.911,1.237-14.996,5.418-19.588,12.371c-1.801,2.728,2.065,6.108,3.881,3.354c3.307-5.007,7.803-8.238,13.033-9.834c-1.521,1.387-2.972,2.854-4.416,4.275c-2.365,2.328,1.543,5.658,3.883,3.354c2.906-2.858,5.771-5.854,9.395-7.814c0.016-0.008,0.027-0.02,0.041-0.023C56.473,36.149,58.125,34.068,57.427,31.395z"/><circle cx="41.304" cy="8.305" r="4.105"/></svg>
                   Total Stabs
                 </p>
                 <p className="font-headline text-[26px] md:text-3xl font-bold text-white tabular-nums">{formatNumber(player.mixtotalstabs || player.mixTotalStabs)}</p>
               </div>
-              <div className="space-y-1">
+              <div className="flex-1 space-y-1">
                 <p className="font-headline text-gray-500 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" className="w-6 h-6 shrink-0" fill="currentColor"><path d="M12,6a6.21,6.21,0,0,0-6.21,5H2v2H5.83A6.23,6.23,0,0,0,12,18H17V6Z"/><path d="M33.79,23H30.14a6.25,6.25,0,0,0-6.21-5H19v2H14a1,1,0,0,0-1,1,1,1,0,0,0,1,1h5v4H14a1,1,0,0,0-1,1,1,1,0,0,0,1,1h5v2h4.94a6.23,6.23,0,0,0,6.22-5h3.64Z"/></svg>
                   Disconnects
                 </p>
                 <p className="font-headline text-[26px] md:text-3xl font-bold text-red-500 tabular-nums">{formatNumber(player.mixdisconnects || player.mixDisconnects)}</p>
               </div>
-              <div className="space-y-1">
+              <div className="flex-1 space-y-1">
                 <p className="font-headline text-gray-500 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" className="w-6 h-6 shrink-0" fill="currentColor"><path d="M0 16q0-3.232 1.28-6.208t3.392-5.12 5.12-3.392 6.208-1.28q3.264 0 6.24 1.28t5.088 3.392 3.392 5.12 1.28 6.208q0 3.264-1.28 6.208t-3.392 5.12-5.12 3.424-6.208 1.248-6.208-1.248-5.12-3.424-3.392-5.12-1.28-6.208zM4 16q0 3.264 1.6 6.048t4.384 4.352 6.016 1.6 6.016-1.6 4.384-4.352 1.6-6.048-1.6-6.016-4.384-4.352-6.016-1.632-6.016 1.632-4.384 4.352-1.6 6.016zM6.496 12.928l6.56-0.96 2.944-5.952 2.944 5.952 6.56 0.96-4.768 4.64 1.152 6.528-5.888-3.072-5.888 3.072 1.152-6.528z"/></svg>
                   Mix Elo
                 </p>
-                <p className="font-headline text-[26px] md:text-3xl font-bold text-primary-dim tabular-nums">{formatNumber(player.mixelo || player.mixElo)}</p>
+                <p className="font-headline text-[26px] md:text-3xl font-bold text-yellow-500 tabular-nums">{formatNumber(player.mixelo || player.mixElo)}</p>
               </div>
             </div>
           </div>
@@ -382,10 +387,10 @@ export default function Profile() {
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-5 h-5 shrink-0" fill="currentColor"><path d="M256 48C141.1 48 48 141.1 48 256s93.1 208 208 208 208-93.1 208-208S370.9 48 256 48zm0 380c-94.9 0-172-77.1-172-172S161.1 84 256 84s172 77.1 172 172-77.1 172-172 172zm16-262h-32v112l96 57.6 16-26.2-80-47.4V166z"/></svg>
                 Connects
               </p>
-              <p className="font-headline text-[26px] md:text-3xl font-bold text-gray-600 tabular-nums">{formatNumber(player.connections || player.connects || 0)}</p>
+              <p className="font-headline text-[26px] md:text-3xl font-bold text-gray-500 tabular-nums">{formatNumber(player.connections || player.connects || 0)}</p>
             </div>
             <div className="space-y-0.5 flex flex-col">
-              <p className="font-headline text-gray-500 text-xs font-bold uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
+              <p className="font-headline text-primary-dim text-xs font-bold uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-5 h-5 shrink-0" fill="currentColor"><path d="m208.242 24.629-52.058 95.205 95.207 52.059 17.271-31.586-42.424-23.198A143.26 143.26 0 0 1 256 114c78.638 0 142 63.362 142 142s-63.362 142-142 142-142-63.362-142-142c0-16.46 2.785-32.247 7.896-46.928l-32.32-16.16C82.106 212.535 78 233.798 78 256c0 98.093 79.907 178 178 178s178-79.907 178-178S354.093 78 256 78c-13.103 0-25.875 1.44-38.18 4.148l22.008-40.25-31.586-17.27zm104.27 130.379L247 253.275V368h18V258.725l62.488-93.733-14.976-9.984z"/></svg>
                 Last 7 Days
               </p>
@@ -404,7 +409,7 @@ export default function Profile() {
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-5 h-5 shrink-0" fill="currentColor"><path d="M256 19.313c-44.404 0-85.098 25.433-115.248 68.123C110.6 130.126 91.594 189.846 91.594 256c0 66.152 19.005 125.87 49.156 168.563 30.15 42.69 70.845 68.125 115.25 68.125 44.402 0 85.07-25.435 115.22-68.125 30.15-42.69 49.186-102.41 49.186-168.563 0-66.152-19.037-125.87-49.19-168.564-30.15-42.69-70.812-68.124-115.214-68.124H256zM204.23 213.88l14.99 9.966-20.074 30.19 30.192 20.073-9.965 14.99-30.19-20.073-20.074 30.192-14.99-9.966 20.07-30.192L144 238.99l9.965-14.99 30.19 20.072 20.074-30.19zm103.54 0 20.074 30.192L358.034 224 368 238.99l-30.19 20.072 20.07 30.192-14.99 9.965-20.072-30.193-30.19 20.073-9.966-14.99 30.192-20.073-20.073-30.19 14.99-9.966zM256 367c26 0 52.242 8.515 70.363 26.637l-12.726 12.726c-3.28-3.28-7.006-6.198-11.067-8.75-.06 1.55-.142 3.128-.27 4.737-.46 5.693-1.33 11.654-3.568 17.257-2.236 5.603-6.655 11.875-14.228 13.487-8.496 1.807-15.982-2.58-21.13-7.59-5.146-5.01-9.12-11.24-12.495-17.422-4.78-8.754-8.213-17.494-9.83-21.902-16.58 2.595-31.98 9.477-42.687 20.183l-12.726-12.726C203.757 375.515 230 367 256 367zm3.945 18.084c1.67 4.095 3.972 9.312 6.735 14.373 2.885 5.286 6.303 10.28 9.25 13.147 2.8 2.724 4.114 2.98 4.728 2.896.056-.07.543-.523 1.358-2.564 1.098-2.752 1.965-7.354 2.34-12.032.333-4.114.343-8.192.257-11.523-7.827-2.495-16.192-3.952-24.668-4.296z"/></svg>
                 Total Deaths
               </p>
-              <p className="font-headline text-[26px] md:text-3xl font-bold text-gray-600 tabular-nums">{formatNumber(player.deaths)}</p>
+              <p className="font-headline text-[26px] md:text-3xl font-bold text-gray-500 tabular-nums">{formatNumber(player.deaths)}</p>
             </div>
             <div className="space-y-0.5 pt-2 border-t border-t-outline-variant/10">
               <p className="font-headline text-primary-dim text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 pt-3">
@@ -447,23 +452,23 @@ export default function Profile() {
           </div>
 
           <div className="grid grid-cols-2 gap-3 pt-2 border-t border-outline-variant/10">
-            {/* O W N A G E S - Gradient Placut + Auriu */}
+            {/* O W N A G E S */}
             <div className="relative bg-background/60 border border-outline-variant/20 p-3 overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-br from-gray-600/30 via-white/10 to-primary-dim/30 pointer-events-none"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-gray-600/40 via-white/5 to-yellow-500/20 pointer-events-none"></div>
               <p className="font-headline text-white text-xs font-bold uppercase tracking-[0.2em] flex items-center gap-1.5 mb-2 relative z-10">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 51 51" className="w-5 h-5 shrink-0 text-white" fill="currentColor"><path d="M48.011,33.803c-6.846-0.848-13.729-1.594-20.619-2.086c-0.525-2.92-1-5.285-0.233-7.16c0.087-0.076,0.706-1.14,0.81-1.277c0.375-0.496,0.756-0.984,1.166-1.452c1.154-1.318,2.406-2.551,3.629-3.805c1.996-2.043,2.627-5.029,0.652-7.385c-0.826-0.987-2.127-1.649-3.474-1.837c-5.149-2.451-10.497-4.4-15.986-5.978c-4.179-1.2-6.498,5.179-2.281,6.392c3.825,1.1,7.579,2.38,11.246,3.884c-2.368,2.411-4.651,5.031-5.732,8.139c-1.136,3.264-0.982,6.644-0.498,9.991c-1.709-0.024-3.418-0.067-5.11-0.26c-3.004-0.342-6.531-0.463-9.103,1.424c-4.777,3.506-1.261,8.691-0.795,13.201c0.449,4.359,7.128,3.158,6.682-1.172c-0.224-2.166-1.231-4.107-1.584-6.232c-0.17-1.024-0.477-0.424,0.589-0.559c1.549-0.197,3,0.068,4.542,0.199c4.846,0.408,9.75,0.283,14.612,0.65c6.987,0.531,13.97,1.223,20.925,2.084C51.795,41.102,52.349,34.34,48.011,33.803z"/><circle cx="41.288" cy="11.292" r="5.323"/></svg>
                 Ownages
               </p>
-              <p className="font-headline font-black text-[26px] md:text-3xl text-yellow-500 tabular-nums leading-none relative z-10">{formatNumber(player.ownages)}</p>
+              <p className="font-headline font-black text-[26px] md:text-3xl text-white tabular-nums leading-none relative z-10">{formatNumber(player.ownages)}</p>
             </div>
-            {/* W R E C K E R S - Gradient Placut + Mov (#792be0) */}
+            {/* W R E C K E R S */}
             <div className="relative bg-background/60 border border-outline-variant/20 p-3 overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-br from-gray-600/30 via-white/10 to-primary-dim/30 pointer-events-none"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-gray-600/40 via-white/5 to-[#792be0]/30 pointer-events-none"></div>
               <p className="font-headline text-white text-xs font-bold uppercase tracking-[0.2em] flex items-center gap-1.5 mb-2 relative z-10">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 55.759 55.759" className="w-5 h-5 shrink-0 text-white" fill="currentColor"><path d="M49.259,19.368c-5.932,3.152-11.836,6.407-17.604,9.868c-2.051-2.034-3.751-3.653-4.189-5.578c0.024-0.115-0.076-1.303-0.07-1.471c0.023-0.604,0.053-1.208,0.117-1.81c0.185-1.695,0.491-3.379,0.767-5.063c0.448-2.745-0.72-5.476-3.609-6.25c-1.027-0.275-2.196-0.171-3.247,0.234c-0.384-0.21-0.825-0.356-1.328-0.412C15.849,8.415,11.68,7.48,7.681,5.968c-3.993-1.509-5.701,4.878-1.756,6.37c3.9,1.475,7.937,2.335,12.046,2.891c-0.014,0.078-0.027,0.156-0.042,0.234c-4.799,0.921-9.505,2.222-14.138,3.818c-4.003,1.378-2.283,7.762,1.756,6.37c3.81-1.313,7.667-2.426,11.585-3.293c-0.004,1.442,0.142,2.863,0.529,4.229c0.92,3.238,2.931,5.846,5.19,8.244c-1.378,0.936-2.764,1.855-4.22,2.648c-2.586,1.409-5.464,3.284-6.459,6.228c-1.847,5.466,3.854,7.632,6.749,10.969c2.795,3.224,7.448-1.469,4.671-4.672c-1.389-1.601-3.277-2.586-4.749-4.083c-0.708-0.723-0.615-0.07,0.159-0.773c1.124-1.023,2.428-1.623,3.731-2.383c4.091-2.384,7.93-5.227,12.01-7.652c5.869-3.484,11.82-6.836,17.848-10.042C56.355,23.071,53.019,17.369,49.259,19.368z"/><circle cx="31.31" cy="5.183" r="5.183"/></svg>
                 Wreckers
               </p>
-              <p className="font-headline font-black text-[26px] md:text-3xl text-[#792be0] tabular-nums leading-none relative z-10">{formatNumber(player.wreckers)}</p>
+              <p className="font-headline font-black text-[26px] md:text-3xl text-white tabular-nums leading-none relative z-10">{formatNumber(player.wreckers)}</p>
             </div>
           </div>
         </div>
@@ -496,16 +501,20 @@ export default function Profile() {
              <div className="flex-1 flex flex-col justify-between pt-3 gap-0">
                 {getAllJumps(currentStats).map(j => {
                    const hasRecord = j.dist && parseFloat(j.dist) > 0;
-                   const distColor = getJumpColor(j.abbr, j.dist);
+                   const abbrColor = hasRecord ? getJumpColor(j.abbr, j.dist) : "text-gray-500";
                    const syncVal = parseFloat(j.sync || 0);
-                   const syncColor = syncVal >= 90 ? "text-green-500" : "text-primary-dim";
+                   const syncColor = syncVal >= 90 ? "text-green-500" : "text-white";
 
                    return (
                      <div key={j.abbr} title={j.label} className="grid grid-cols-[30px_1.5fr_1fr_1fr_1fr_1fr_1fr] md:grid-cols-[40px_1.5fr_1fr_1fr_1fr_1fr_1fr] text-center items-center bg-gray/30 border border-white/5 py-3 md:py-3.5 px-2 rounded-sm hover:bg-white/[0.03] transition-colors shadow-inner">
-                       <span className="font-headline text-xs md:text-sm font-bold text-gray-400 uppercase tracking-widest text-left">{j.abbr}</span>
+                       
+                       {/* ABREVIERE COLORATA */}
+                       <span className={`font-headline text-xs md:text-sm font-bold uppercase tracking-widest text-left ${abbrColor}`}>{j.abbr}</span>
+                       
                        {hasRecord ? (
                           <>
-                            <span className={`font-headline font-bold text-sm md:text-base ${distColor} tracking-tighter tabular-nums`}>
+                            {/* DISTANTA MEREU ALBA */}
+                            <span className="font-headline font-bold text-sm md:text-base text-white tracking-tighter tabular-nums">
                                {parseFloat(j.dist).toFixed(2)}
                             </span>
                             <span className="font-headline font-bold text-xs md:text-sm text-white">{parseFloat(j.max || 0).toFixed(0)}</span>
@@ -533,21 +542,6 @@ export default function Profile() {
 
       </section>
       </div>
-
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={() => setIsModalOpen(false)}></div>
-          <div className="relative bg-surface-container-highest border border-outline-variant/20 w-full max-w-2xl p-6 md:p-8 overflow-hidden flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.8)] rounded-xl animate-fade-in max-h-[85vh]">
-            <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4 shrink-0">
-              <div><h2 className="font-headline text-2xl font-black text-white uppercase tracking-tighter leading-none drop-shadow-lg">Jump Statistics</h2><p className="text-[10px] text-primary-dim font-bold uppercase tracking-[0.2em] mt-2">MODE: {jumpMode}</p></div>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest border border-white/10 px-4 py-2 hover:bg-white/5 rounded-md">Close</button>
-            </div>
-            <div className="overflow-y-auto custom-scrollbar pr-2 pb-4 flex-1">
-              {/* Fallback pentru modal - desi acum e totul direct pe pagina */}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

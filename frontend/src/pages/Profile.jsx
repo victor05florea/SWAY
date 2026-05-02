@@ -252,7 +252,7 @@ export default function Profile() {
           </div>
         </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+      <section className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 mt-8 items-start">
         
         {/* --- BANNED BAR --- */}
         {cheaterInfo && (
@@ -366,109 +366,153 @@ export default function Profile() {
           </div>
         </div>
 
+        {/* --- LEFT COLUMN: Stats + Movement stacked --- */}
+        <div className="flex flex-col gap-6">
+
         {/* --- STATS --- */}
-        <div className="lg:col-span-2 bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 space-y-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
-          <div className="flex items-center justify-between border-b border-outline-variant/10 pb-4"><h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Stats</h3></div>
-          <div className="grid grid-cols-2 gap-y-6 gap-x-4">
-            <div className="space-y-1 flex flex-col">
-              <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-5 h-5 shrink-0" fill="currentColor"><path d="M256 91.088c-111.453 0-202.122 88.575-202.122 197.456C53.878 397.426 144.548 486 256 486c111.453 0 202.122-88.574 202.122-197.456 0-108.881-90.67-197.455-202.122-197.455zm0 375.866c-100.942 0-183.076-80.039-183.076-178.41 0-98.37 82.134-178.41 183.076-178.41s183.076 80.04 183.076 178.41c0 98.371-82.134 178.41-183.076 178.41zm-.571-178.41 128.558 99.55A165.602 165.602 0 0 1 256 447.908c-90.467 0-164.03-71.493-164.03-159.365 0-87.681 73.266-159.055 163.447-159.352v159.352zM256 72.043a224.727 224.727 0 0 0-66.66 10.07V56.354A30.354 30.354 0 0 1 219.694 26h72.695a30.354 30.354 0 0 1 30.27 30.354v25.76A224.727 224.727 0 0 0 256 72.042zm128.939 40.71 20.117-19.748c8.797-8.642 21.272-10.463 27.878-4.083l20.403 19.748c6.594 6.38 4.761 18.558-3.988 27.2l-19.438 19.045a221.06 221.06 0 0 0-44.96-42.162zM82.435 154.51l-19.391-19.046c-8.797-8.642-10.713-20.724-4.202-26.985L78.875 89.1c6.476-6.26 18.856-4.344 27.652 4.298l20.046 19.688a221.06 221.06 0 0 0-44.138 41.425z"/></svg>
+        <div className="bg-surface-container-low/80 backdrop-blur-md p-5 border border-outline-variant/20 space-y-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
+          <div className="flex items-center justify-between border-b border-outline-variant/10 pb-3"><h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Stats</h3></div>
+          <div className="grid grid-cols-3 gap-y-4 gap-x-4">
+            {/* Row 1 */}
+            <div className="space-y-0.5 flex flex-col border-r border-outline-variant/10 pr-4">
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-4 h-4 shrink-0" fill="currentColor"><path d="M256 91.088c-111.453 0-202.122 88.575-202.122 197.456C53.878 397.426 144.548 486 256 486c111.453 0 202.122-88.574 202.122-197.456 0-108.881-90.67-197.455-202.122-197.455zm0 375.866c-100.942 0-183.076-80.039-183.076-178.41 0-98.37 82.134-178.41 183.076-178.41s183.076 80.04 183.076 178.41c0 98.371-82.134 178.41-183.076 178.41zm-.571-178.41 128.558 99.55A165.602 165.602 0 0 1 256 447.908c-90.467 0-164.03-71.493-164.03-159.365 0-87.681 73.266-159.055 163.447-159.352v159.352zM256 72.043a224.727 224.727 0 0 0-66.66 10.07V56.354A30.354 30.354 0 0 1 219.694 26h72.695a30.354 30.354 0 0 1 30.27 30.354v25.76A224.727 224.727 0 0 0 256 72.042zm128.939 40.71 20.117-19.748c8.797-8.642 21.272-10.463 27.878-4.083l20.403 19.748c6.594 6.38 4.761 18.558-3.988 27.2l-19.438 19.045a221.06 221.06 0 0 0-44.96-42.162zM82.435 154.51l-19.391-19.046c-8.797-8.642-10.713-20.724-4.202-26.985L78.875 89.1c6.476-6.26 18.856-4.344 27.652 4.298l20.046 19.688a221.06 221.06 0 0 0-44.138 41.425z"/></svg>
                 Total Time
               </p>
-              <p className="font-headline text-4xl font-bold text-white flex items-baseline">{renderTime(player.time, "text-white")}</p>
+              <p className="font-headline text-2xl font-bold text-white flex items-baseline">{renderTime(player.time, "text-white")}</p>
             </div>
-            <div className="space-y-1 flex flex-col">
-              <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-5 h-5 shrink-0" fill="currentColor"><path d="m208.242 24.629-52.058 95.205 95.207 52.059 17.271-31.586-42.424-23.198A143.26 143.26 0 0 1 256 114c78.638 0 142 63.362 142 142s-63.362 142-142 142-142-63.362-142-142c0-16.46 2.785-32.247 7.896-46.928l-32.32-16.16C82.106 212.535 78 233.798 78 256c0 98.093 79.907 178 178 178s178-79.907 178-178S354.093 78 256 78c-13.103 0-25.875 1.44-38.18 4.148l22.008-40.25-31.586-17.27zm104.27 130.379L247 253.275V368h18V258.725l62.488-93.733-14.976-9.984z"/></svg>
+            <div className="space-y-0.5 flex flex-col border-r border-outline-variant/10 pr-4">
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-4 h-4 shrink-0" fill="currentColor"><path d="M256 48C141.1 48 48 141.1 48 256s93.1 208 208 208 208-93.1 208-208S370.9 48 256 48zm0 380c-94.9 0-172-77.1-172-172S161.1 84 256 84s172 77.1 172 172-77.1 172-172 172zm16-262h-32v112l96 57.6 16-26.2-80-47.4V166z"/></svg>
+                Connects
+              </p>
+              <p className="font-headline text-2xl font-bold text-gray-600">{formatNumber(player.connections || player.connects || 0)}</p>
+            </div>
+            <div className="space-y-0.5 flex flex-col">
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-4 h-4 shrink-0" fill="currentColor"><path d="m208.242 24.629-52.058 95.205 95.207 52.059 17.271-31.586-42.424-23.198A143.26 143.26 0 0 1 256 114c78.638 0 142 63.362 142 142s-63.362 142-142 142-142-63.362-142-142c0-16.46 2.785-32.247 7.896-46.928l-32.32-16.16C82.106 212.535 78 233.798 78 256c0 98.093 79.907 178 178 178s178-79.907 178-178S354.093 78 256 78c-13.103 0-25.875 1.44-38.18 4.148l22.008-40.25-31.586-17.27zm104.27 130.379L247 253.275V368h18V258.725l62.488-93.733-14.976-9.984z"/></svg>
                 Last 7 Days
               </p>
-              <p className="font-headline text-4xl font-bold text-primary-dim flex items-baseline">{renderTime(player.weektime, "text-primary-dim")}</p>
+              <p className="font-headline text-2xl font-bold text-primary-dim flex items-baseline">{renderTime(player.weektime, "text-primary-dim")}</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-gray-500 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 51 51" className="w-5 h-5 shrink-0" fill="currentColor"><path d="M48.011,33.803c-6.846-0.848-13.729-1.594-20.619-2.086c-0.525-2.92-1-5.285-0.233-7.16c0.087-0.076,0.706-1.14,0.81-1.277c0.375-0.496,0.756-0.984,1.166-1.452c1.154-1.318,2.406-2.551,3.629-3.805c1.996-2.043,2.627-5.029,0.652-7.385c-0.826-0.987-2.127-1.649-3.474-1.837c-5.149-2.451-10.497-4.4-15.986-5.978c-4.179-1.2-6.498,5.179-2.281,6.392c3.825,1.1,7.579,2.38,11.246,3.884c-2.368,2.411-4.651,5.031-5.732,8.139c-1.136,3.264-0.982,6.644-0.498,9.991c-1.709-0.024-3.418-0.067-5.11-0.26c-3.004-0.342-6.531-0.463-9.103,1.424c-4.777,3.506-1.261,8.691-0.795,13.201c0.449,4.359,7.128,3.158,6.682-1.172c-0.224-2.166-1.231-4.107-1.584-6.232c-0.17-1.024-0.477-0.424,0.589-0.559c1.549-0.197,3,0.068,4.542,0.199c4.846,0.408,9.75,0.283,14.612,0.65c6.987,0.531,13.97,1.223,20.925,2.084C51.795,41.102,52.349,34.34,48.011,33.803z"/><circle cx="41.288" cy="11.292" r="5.323"/></svg>
-                Ownages
+            {/* Row 2 */}
+            <div className="space-y-0.5 border-r border-outline-variant/10 pr-4 pt-2 border-t border-t-outline-variant/10">
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 pt-3">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-4 h-4 shrink-0" fill="currentColor"><path d="m485.813 19.125-85.594 28.563c5.54 36.314 1.39 77.714-19.095 122.937-25.507 56.312-75.953 118.53-163.53 186.22l-11.25-14.908c85.803-66.357 133.95-126.46 157.75-179 17.45-38.53 22.02-72.994 18.81-103.687L170.94 295.063l-22-29.125-14.907 11.25 23.095 30.562-.25.188 34.22 44.968c.022-.018.038-.044.06-.062l11.814 15.625.968 1.374 6.843 8.97-21 35.155 16.032 9.592L230.032 383l3.25-5.406-.126-.156c149.192-98.997 283.78-234.44 252.656-358.313zm-27.407 211.563c-3.195 44.583-12.58 64.095-21.875 78.03-4.663 6.994-9.53 13.964-9.53 23.032 0 18.143 14.388 33.094 32.53 33.094 18.144 0 33.126-14.95 33.126-33.094 0-10.064-6.316-17.154-11.78-24.72-9.717-13.458-18.577-32.888-22.47-76.342zm-85.03 83.156c-4.187 58.39-16.517 83.938-28.688 102.187-6.11 9.164-12.47 18.28-12.47 30.158 0 23.76 18.865 43.343 42.626 43.343 23.76 0 43.375-19.582 43.375-43.342 0-13.182-8.283-22.467-15.44-32.375-12.724-17.626-24.305-43.055-29.405-99.97zM142.03 319.28A593.69 593.69 0 0 0 127.625 331c3.36 9.22 7.55 20.726 11.875 32.72 3.4 9.423 6.637 18.544 9.594 26.905 8.9-9.123 18.042-17.753 27.5-25.875l-34.563-45.47zm-29.53 24.876A625.157 625.157 0 0 0 90.97 364.5l25 63.594A559.564 559.564 0 0 1 134.72 406c-.052-.145-.075-.26-.126-.406-3.47-9.91-8.09-22.787-12.688-35.53-3.423-9.494-6.464-17.82-9.406-25.908zm-35.844 34.97a684.95 684.95 0 0 0-24.47 27.218l32.19 64.28c6.026-8.72 12.082-17.21 18.25-25.405l-25.97-66.095zm-37.5 42.968a762.851 762.851 0 0 0-19.03 24.687c2.195 26.79 25.804 46.102 46.093 51.064 2.042-3.18 4.103-6.317 6.155-9.438l-33.22-66.312z"/></svg>
+                Total Kills
               </p>
-              <p className="font-headline text-3xl font-bold text-white">{formatNumber(player.ownages)}</p>
+              <p className="font-headline text-3xl font-bold text-white">{formatNumber(player.kills)}</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-gray-500 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 55.759 55.759" className="w-5 h-5 shrink-0" fill="currentColor"><path d="M49.259,19.368c-5.932,3.152-11.836,6.407-17.604,9.868c-2.051-2.034-3.751-3.653-4.189-5.578c0.024-0.115-0.076-1.303-0.07-1.471c0.023-0.604,0.053-1.208,0.117-1.81c0.185-1.695,0.491-3.379,0.767-5.063c0.448-2.745-0.72-5.476-3.609-6.25c-1.027-0.275-2.196-0.171-3.247,0.234c-0.384-0.21-0.825-0.356-1.328-0.412C15.849,8.415,11.68,7.48,7.681,5.968c-3.993-1.509-5.701,4.878-1.756,6.37c3.9,1.475,7.937,2.335,12.046,2.891c-0.014,0.078-0.027,0.156-0.042,0.234c-4.799,0.921-9.505,2.222-14.138,3.818c-4.003,1.378-2.283,7.762,1.756,6.37c3.81-1.313,7.667-2.426,11.585-3.293c-0.004,1.442,0.142,2.863,0.529,4.229c0.92,3.238,2.931,5.846,5.19,8.244c-1.378,0.936-2.764,1.855-4.22,2.648c-2.586,1.409-5.464,3.284-6.459,6.228c-1.847,5.466,3.854,7.632,6.749,10.969c2.795,3.224,7.448-1.469,4.671-4.672c-1.389-1.601-3.277-2.586-4.749-4.083c-0.708-0.723-0.615-0.07,0.159-0.773c1.124-1.023,2.428-1.623,3.731-2.383c4.091-2.384,7.93-5.227,12.01-7.652c5.869-3.484,11.82-6.836,17.848-10.042C56.355,23.071,53.019,17.369,49.259,19.368z"/><circle cx="31.31" cy="5.183" r="5.183"/></svg>
-                Wreckers
+            <div className="space-y-0.5 border-r border-outline-variant/10 pr-4 pt-2 border-t border-t-outline-variant/10">
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 pt-3">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-4 h-4 shrink-0" fill="currentColor"><path d="M256 19.313c-44.404 0-85.098 25.433-115.248 68.123C110.6 130.126 91.594 189.846 91.594 256c0 66.152 19.005 125.87 49.156 168.563 30.15 42.69 70.845 68.125 115.25 68.125 44.402 0 85.07-25.435 115.22-68.125 30.15-42.69 49.186-102.41 49.186-168.563 0-66.152-19.037-125.87-49.19-168.564-30.15-42.69-70.812-68.124-115.214-68.124H256zM204.23 213.88l14.99 9.966-20.074 30.19 30.192 20.073-9.965 14.99-30.19-20.073-20.074 30.192-14.99-9.966 20.07-30.192L144 238.99l9.965-14.99 30.19 20.072 20.074-30.19zm103.54 0 20.074 30.192L358.034 224 368 238.99l-30.19 20.072 20.07 30.192-14.99 9.965-20.072-30.193-30.19 20.073-9.966-14.99 30.192-20.073-20.073-30.19 14.99-9.966zM256 367c26 0 52.242 8.515 70.363 26.637l-12.726 12.726c-3.28-3.28-7.006-6.198-11.067-8.75-.06 1.55-.142 3.128-.27 4.737-.46 5.693-1.33 11.654-3.568 17.257-2.236 5.603-6.655 11.875-14.228 13.487-8.496 1.807-15.982-2.58-21.13-7.59-5.146-5.01-9.12-11.24-12.495-17.422-4.78-8.754-8.213-17.494-9.83-21.902-16.58 2.595-31.98 9.477-42.687 20.183l-12.726-12.726C203.757 375.515 230 367 256 367zm3.945 18.084c1.67 4.095 3.972 9.312 6.735 14.373 2.885 5.286 6.303 10.28 9.25 13.147 2.8 2.724 4.114 2.98 4.728 2.896.056-.07.543-.523 1.358-2.564 1.098-2.752 1.965-7.354 2.34-12.032.333-4.114.343-8.192.257-11.523-7.827-2.495-16.192-3.952-24.668-4.296z"/></svg>
+                Total Deaths
               </p>
-              <p className="font-headline text-3xl font-bold text-white">{formatNumber(player.wreckers)}</p>
+              <p className="font-headline text-3xl font-bold text-gray-600">{formatNumber(player.deaths)}</p>
+            </div>
+            <div className="space-y-0.5 pt-2 border-t border-t-outline-variant/10">
+              <p className="text-primary-dim text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 pt-3">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-4 h-4 shrink-0" fill="currentColor"><path d="M85.875 20.97c-2.23 31.596-95.21 45.233-4.813 99.03-23.242-46.488 64.566-57.552 4.813-99.03zM278.53 23c-32.003 14.21-22.885 55.257-8.186 73 28 33.796-31.348 52.158-49.063-5.25-5.377 17.623-24.532 21.47-35.624 7.563-7.015-8.797-19.48-31.605-12.25-53.72-20.884 14.735-31.686 45.047-19.28 63.063 29.282 42.526-11.72 75.307-58.97 40.906 36.456 47.748 21.176 119.87-16.344 144.25 14.684-32.04 8.24-88.19-22.218-99.28 14.39 42.618-16.59 75.378-36.75 66.155V494.72h52.562c6.15-23.78 16.033-46.735 30.5-61.44 16.928-17.203 41.296-29.383 77.78-36.25l15.595-2.936-10.124-12.22c-20.233-24.38-33.406-59.518-33.406-98.655 0-37.723 12-71.733 30.906-95.94 18.906-24.205 44.29-38.53 72.125-38.53 27.837 0 53.19 14.325 72.095 38.53 18.905 24.208 30.906 58.218 30.906 95.94 0 38.246-12.073 73.187-31.374 97.374l-10.03 12.562 15.874 2.5c39.988 6.292 65.567 18.497 82.5 35.844 14.297 14.647 23.413 38.986 28.625 63.22h50.75V238.78c-7.012-23.793-17.18-46.354-32.625-51.093 19.492 39.968 1.278 129.343-61.906 141.313 26.715-22.383 45.213-78.483 35.03-101.594-34.788 47.587-79.102 2.555-34.437-43.22 29.676-30.412 39.924-68.813 10.5-110.967 9.104 40.185-37.766 84.93-69.875 56.655-21.68-19.09-10.235-60.918 23.75-71.844-26.954-9.334-47.72 2.8-52.562 21.595C295.337 62.535 272.155 51.37 278.53 23zm-74.155 242.844c-9.215-.212-19.062 3.635-29.063 13.28 14.593 29.555 39.886 25.69 67.938 13.188-9.878-14.53-23.517-26.116-38.875-26.468zm99.094 0c-15.36.352-28.998 11.938-38.876 26.47 28.05 12.5 53.345 16.365 67.937-13.19-10-9.645-19.846-13.492-29.06-13.28zM197.03 350.75c19.292 61.366 100.937 60.7 121.69 0-42.215 8.574-80.72 9.61-121.69 0z"/></svg>
+                K/D Ratio
+              </p>
+              <p className="font-headline text-3xl font-bold text-primary-dim">{kdRatio}</p>
             </div>
           </div>
         </div>
 
-        <div className="lg:col-span-2 bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 space-y-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
-          <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-outline-variant/10 pb-4 gap-4 md:gap-0">
-            <div className="flex items-center gap-4">
-                <h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Personal Bests</h3>
-                <button onClick={() => setIsModalOpen(true)} className="text-[9px] font-bold text-primary-dim hover:text-white transition-colors uppercase tracking-[0.2em] flex items-center gap-1 group">SEE ALL RECORDS <span className="group-hover:translate-x-1 transition-transform">&rarr;</span></button>
+        <div className="bg-surface-container-low/80 backdrop-blur-md p-5 border border-outline-variant/20 space-y-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
+          <div className="flex items-center justify-between border-b border-outline-variant/10 pb-3"><h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Movement</h3></div>
+          
+          {/* Top row: Jumps + Ducks with progress bars */}
+          <div className="space-y-3">
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60.906 60.906" className="w-4 h-4 shrink-0" fill="currentColor"><path d="M19.472,3.504c2.436,0,4.411,1.975,4.411,4.411s-1.975,4.411-4.411,4.411s-4.411-1.975-4.411-4.411S17.036,3.504,19.472,3.504z M56.215,35.58c0.656,0,1.188,0.532,1.188,1.188s-0.532,1.188-1.188,1.188s-1.188-0.532-1.188-1.188C55.027,36.112,55.558,35.58,56.215,35.58z M57.525,41.412c0.332,0,0.601,0.27,0.601,0.602s-0.269,0.601-0.601,0.601s-0.602-0.269-0.602-0.601S57.193,41.412,57.525,41.412z M52.476,39.336c0.308,0,0.558,0.25,0.558,0.559c0,0.308-0.25,0.558-0.558,0.558c-0.309,0-0.559-0.25-0.559-0.558C51.918,39.586,52.168,39.336,52.476,39.336z M52.94,44.564l7.937-0.018l0.029,12.838l-7.936,0.018L52.94,44.564z M48.039,35.562c-5.486-1.654-9.902-6.232-12.686-11.101c-0.074-0.134-0.159-0.252-0.248-0.363c-0.082-0.291-0.191-0.578-0.325-0.858c-1.177-2.473-2.709-4.795-4.531-6.855c4.333-0.884,8.58-2.089,12.744-3.688c3.083-1.182,1.747-6.188-1.374-4.99c-5.702,2.19-11.623,3.77-17.684,4.565c-0.088,0.012-0.164,0.04-0.248,0.058c-0.917,0.095-1.808,0.49-2.557,1.248c-0.283,0.287-0.521,0.623-0.713,0.987c-3.674,0.54-7.009-0.527-10.16-2.707c-2.752-1.904-5.336,2.583-2.612,4.468c4.053,2.804,8.652,4.021,13.406,3.366c0.039,0.036,0.072,0.073,0.111,0.106c2.062,1.732,3.682,3.698,4.998,5.956c-6.192,1.682-12.586,4.956-13.597,11.445c-0.507,3.264,4.479,4.667,4.99,1.378c0.974-6.257,9.54-8.054,14.981-8.904c3.456,4.948,8.346,9.135,14.126,10.879C49.867,41.517,51.224,36.523,48.039,35.562z M0,56.874h7.934L12.53,44.04H0V56.874z"/></svg>
+                  Total Jumps
+                </span>
+                <span className="font-headline font-bold text-xl text-white tabular-nums">{formatNumber(player.jumps)}</span>
+              </div>
+              <div className="h-1 bg-background overflow-hidden border border-outline-variant/20"><div className="h-full bg-primary-dim w-[85%]"></div></div>
             </div>
-            <div className="flex bg-background border border-outline-variant/20 p-1">
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 122.669 122.669" className="w-4 h-4 shrink-0" fill="currentColor"><circle cx="62.216" cy="18.908" r="18.908"/><path d="M108.929,84.604c-7.869-2.955-12.972-12.27-17.907-21.276c-4.648-8.484-9.04-16.499-16.229-20.908c-0.315-0.194-0.647-0.331-0.978-0.472c-2.106-1.407-4.474-2.442-6.887-3.034l-4.711,4.741l-4.567-4.793c-0.015,0.003-0.031,0.005-0.046,0.009c-2.238,0.535-4.435,1.458-6.426,2.702c-0.731,0.176-1.453,0.433-2.128,0.848c-7.08,4.34-11.523,12.555-16.228,21.251c-5.192,9.599-10.561,19.522-18.57,21.875c-3.89,1.142-6.118,5.222-4.976,9.111c0.938,3.2,3.866,5.274,7.04,5.274c0.684,0,1.38-0.096,2.07-0.299c0.645-0.189,1.261-0.418,1.878-0.646c-1.201,1.295-1.953,2.938-2.21,5.064c-0.421,3.479,0.663,6.891,3.055,9.608c6.744,7.666,25.191,8.935,35.587,9.01c0.021,0,0.042,0,0.063,0c2.205,0,4.213-0.831,5.745-2.188c1.532,1.357,3.541,2.188,5.745,2.188c0.021,0,0.042,0,0.062,0c10.396-0.075,28.843-1.344,35.587-9.01c2.393-2.718,3.477-6.13,3.056-9.607c-0.295-2.437-1.234-4.224-2.729-5.579c0.705,0.215,1.417,0.346,2.123,0.346c2.971,0,5.769-1.817,6.874-4.764C114.646,90.26,112.725,86.027,108.929,84.604z M42.864,75.885v17.629c-6.544,0.516-11.94,0.967-16.017,2.039C33.812,90.749,38.677,83.331,42.864,75.885z M81.569,93.802V76.509c4.246,7.319,9.298,14.535,16.708,19.115C94.067,94.557,88.442,94.209,81.569,93.802z"/></svg>
+                  Total Ducks
+                </span>
+                <span className="font-headline font-bold text-xl text-white tabular-nums">{formatNumber(player.ducks)}</span>
+              </div>
+              <div className="h-1 bg-background overflow-hidden border border-outline-variant/20"><div className="h-full bg-gray-500 w-[45%]"></div></div>
+            </div>
+          </div>
+
+          {/* Bottom row: Ownages + Wreckers */}
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-outline-variant/10">
+            <div className="relative bg-background/60 border border-outline-variant/20 p-3 overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary-dim/5 to-transparent pointer-events-none"></div>
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-1.5 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 51 51" className="w-4 h-4 shrink-0" fill="currentColor"><path d="M48.011,33.803c-6.846-0.848-13.729-1.594-20.619-2.086c-0.525-2.92-1-5.285-0.233-7.16c0.087-0.076,0.706-1.14,0.81-1.277c0.375-0.496,0.756-0.984,1.166-1.452c1.154-1.318,2.406-2.551,3.629-3.805c1.996-2.043,2.627-5.029,0.652-7.385c-0.826-0.987-2.127-1.649-3.474-1.837c-5.149-2.451-10.497-4.4-15.986-5.978c-4.179-1.2-6.498,5.179-2.281,6.392c3.825,1.1,7.579,2.38,11.246,3.884c-2.368,2.411-4.651,5.031-5.732,8.139c-1.136,3.264-0.982,6.644-0.498,9.991c-1.709-0.024-3.418-0.067-5.11-0.26c-3.004-0.342-6.531-0.463-9.103,1.424c-4.777,3.506-1.261,8.691-0.795,13.201c0.449,4.359,7.128,3.158,6.682-1.172c-0.224-2.166-1.231-4.107-1.584-6.232c-0.17-1.024-0.477-0.424,0.589-0.559c1.549-0.197,3,0.068,4.542,0.199c4.846,0.408,9.75,0.283,14.612,0.65c6.987,0.531,13.97,1.223,20.925,2.084C51.795,41.102,52.349,34.34,48.011,33.803z"/><circle cx="41.288" cy="11.292" r="5.323"/></svg>
+                Ownages
+              </p>
+              <p className="font-headline font-black text-white tabular-nums leading-none" style={{fontSize: 'clamp(1.25rem, 3vw, 1.875rem)'}}>{formatNumber(player.ownages)}</p>
+            </div>
+            <div className="relative bg-background/60 border border-outline-variant/20 p-3 overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-gray-500/5 to-transparent pointer-events-none"></div>
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-1.5 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 55.759 55.759" className="w-4 h-4 shrink-0" fill="currentColor"><path d="M49.259,19.368c-5.932,3.152-11.836,6.407-17.604,9.868c-2.051-2.034-3.751-3.653-4.189-5.578c0.024-0.115-0.076-1.303-0.07-1.471c0.023-0.604,0.053-1.208,0.117-1.81c0.185-1.695,0.491-3.379,0.767-5.063c0.448-2.745-0.72-5.476-3.609-6.25c-1.027-0.275-2.196-0.171-3.247,0.234c-0.384-0.21-0.825-0.356-1.328-0.412C15.849,8.415,11.68,7.48,7.681,5.968c-3.993-1.509-5.701,4.878-1.756,6.37c3.9,1.475,7.937,2.335,12.046,2.891c-0.014,0.078-0.027,0.156-0.042,0.234c-4.799,0.921-9.505,2.222-14.138,3.818c-4.003,1.378-2.283,7.762,1.756,6.37c3.81-1.313,7.667-2.426,11.585-3.293c-0.004,1.442,0.142,2.863,0.529,4.229c0.92,3.238,2.931,5.846,5.19,8.244c-1.378,0.936-2.764,1.855-4.22,2.648c-2.586,1.409-5.464,3.284-6.459,6.228c-1.847,5.466,3.854,7.632,6.749,10.969c2.795,3.224,7.448-1.469,4.671-4.672c-1.389-1.601-3.277-2.586-4.749-4.083c-0.708-0.723-0.615-0.07,0.159-0.773c1.124-1.023,2.428-1.623,3.731-2.383c4.091-2.384,7.93-5.227,12.01-7.652c5.869-3.484,11.82-6.836,17.848-10.042C56.355,23.071,53.019,17.369,49.259,19.368z"/><circle cx="31.31" cy="5.183" r="5.183"/></svg>
+                Wreckers
+              </p>
+              <p className="font-headline font-black text-white tabular-nums leading-none" style={{fontSize: 'clamp(1.25rem, 3vw, 1.875rem)'}}>{formatNumber(player.wreckers)}</p>
+            </div>
+          </div>
+        </div>
+
+        </div>{/* end left column */}
+
+        {/* --- RIGHT COLUMN: Personal Bests full height --- */}
+        <div className="lg:row-span-2 bg-surface-container-low/80 backdrop-blur-md border border-outline-variant/20 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-outline-variant/10 px-6 py-4 shrink-0">
+            <h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Personal Bests</h3>
+            <div className="flex bg-background border border-outline-variant/20 p-0.5">
               <button onClick={() => setJumpMode("PRE")} className={`px-3 py-1 font-headline text-[10px] uppercase tracking-widest transition-colors ${jumpMode === "PRE" ? "bg-primary-dim text-white" : "text-gray-500 hover:text-white"}`}>PRE</button>
               <button onClick={() => setJumpMode("NOPRE")} className={`px-3 py-1 font-headline text-[10px] uppercase tracking-widest transition-colors ${jumpMode === "NOPRE" ? "bg-primary-dim text-white" : "text-gray-500 hover:text-white"}`}>NOPRE</button>
             </div>
           </div>
-          <div className="space-y-4">
-            {mainJumps.map(j => <div key={j.label} className="flex justify-between items-end border-b border-outline-variant/10 pb-2"><span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{j.label}</span><span className="font-headline font-bold text-lg text-white tracking-tighter">{parseFloat(j.dist || 0).toFixed(2)} <span className="text-[11px] text-gray-600 uppercase ml-1">Units</span></span></div>)}
+          {/* Full jump list */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-4 space-y-1">
+            {getAllJumps(currentStats).map(j => {
+              const hasRecord = j.dist && parseFloat(j.dist) > 0;
+              return (
+                <div key={j.label} className="group relative flex justify-between items-center py-2.5 border-b border-outline-variant/10 last:border-b-0">
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest cursor-default">{j.label}</span>
+                  {hasRecord ? (
+                    <>
+                      <span className="font-headline font-bold text-base text-white tracking-tighter tabular-nums">
+                        {parseFloat(j.dist).toFixed(2)}<span className="text-[10px] text-gray-600 uppercase ml-1">u</span>
+                      </span>
+                      {/* Hover tooltip */}
+                      <div className="pointer-events-none absolute bottom-full left-0 z-50 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 bg-surface-container-highest border border-outline-variant/30 shadow-xl px-3 py-2.5 w-max min-w-[200px]">
+                        <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-2 border-b border-white/5 pb-1.5">{j.label} — Details</p>
+                        <div className="grid grid-cols-5 text-center divide-x divide-white/10 text-xs font-bold uppercase tracking-widest">
+                          <div className="flex flex-col gap-0.5 px-1.5"><span className="text-[8px] text-gray-500">Max</span><span className="text-white text-[11px]">{parseFloat(j.max || 0).toFixed(0)}</span></div>
+                          <div className="flex flex-col gap-0.5 px-1.5"><span className="text-[8px] text-gray-500">Height</span><span className="text-white text-[11px]">{parseFloat(j.height || 0).toFixed(2)}</span></div>
+                          <div className="flex flex-col gap-0.5 px-1.5"><span className="text-[8px] text-gray-500">Pre</span><span className="text-white text-[11px]">{parseFloat(j.pre || 0).toFixed(2)}</span></div>
+                          <div className="flex flex-col gap-0.5 px-1.5"><span className="text-[8px] text-gray-500">Str</span><span className="text-white text-[11px]">{j.str || 0}</span></div>
+                          <div className="flex flex-col gap-0.5 px-1.5"><span className="text-[8px] text-primary-dim">Sync</span><span className="text-primary-dim text-[11px]">{parseFloat(j.sync || 0).toFixed(0)}%</span></div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <span className="font-headline text-xs font-bold text-gray-700 uppercase tracking-widest">None</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        <div className="lg:col-span-2 bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 space-y-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
-          <div className="flex items-center justify-between border-b border-outline-variant/10 pb-4"><h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Combat</h3></div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-1">
-              <p className="text-gray-500 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-5 h-5 shrink-0" fill="currentColor"><path d="m485.813 19.125-85.594 28.563c5.54 36.314 1.39 77.714-19.095 122.937-25.507 56.312-75.953 118.53-163.53 186.22l-11.25-14.908c85.803-66.357 133.95-126.46 157.75-179 17.45-38.53 22.02-72.994 18.81-103.687L170.94 295.063l-22-29.125-14.907 11.25 23.095 30.562-.25.188 34.22 44.968c.022-.018.038-.044.06-.062l11.814 15.625.968 1.374 6.843 8.97-21 35.155 16.032 9.592L230.032 383l3.25-5.406-.126-.156c149.192-98.997 283.78-234.44 252.656-358.313zm-27.407 211.563c-3.195 44.583-12.58 64.095-21.875 78.03-4.663 6.994-9.53 13.964-9.53 23.032 0 18.143 14.388 33.094 32.53 33.094 18.144 0 33.126-14.95 33.126-33.094 0-10.064-6.316-17.154-11.78-24.72-9.717-13.458-18.577-32.888-22.47-76.342zm-85.03 83.156c-4.187 58.39-16.517 83.938-28.688 102.187-6.11 9.164-12.47 18.28-12.47 30.158 0 23.76 18.865 43.343 42.626 43.343 23.76 0 43.375-19.582 43.375-43.342 0-13.182-8.283-22.467-15.44-32.375-12.724-17.626-24.305-43.055-29.405-99.97zM142.03 319.28A593.69 593.69 0 0 0 127.625 331c3.36 9.22 7.55 20.726 11.875 32.72 3.4 9.423 6.637 18.544 9.594 26.905 8.9-9.123 18.042-17.753 27.5-25.875l-34.563-45.47zm-29.53 24.876A625.157 625.157 0 0 0 90.97 364.5l25 63.594A559.564 559.564 0 0 1 134.72 406c-.052-.145-.075-.26-.126-.406-3.47-9.91-8.09-22.787-12.688-35.53-3.423-9.494-6.464-17.82-9.406-25.908zm-35.844 34.97a684.95 684.95 0 0 0-24.47 27.218l32.19 64.28c6.026-8.72 12.082-17.21 18.25-25.405l-25.97-66.095zm-37.5 42.968a762.851 762.851 0 0 0-19.03 24.687c2.195 26.79 25.804 46.102 46.093 51.064 2.042-3.18 4.103-6.317 6.155-9.438l-33.22-66.312z"/></svg>
-                Total Kills
-              </p>
-              <p className="font-headline text-4xl font-bold text-white">{formatNumber(player.kills)}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-gray-500 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-5 h-5 shrink-0" fill="currentColor"><path d="M256 19.313c-44.404 0-85.098 25.433-115.248 68.123C110.6 130.126 91.594 189.846 91.594 256c0 66.152 19.005 125.87 49.156 168.563 30.15 42.69 70.845 68.125 115.25 68.125 44.402 0 85.07-25.435 115.22-68.125 30.15-42.69 49.186-102.41 49.186-168.563 0-66.152-19.037-125.87-49.19-168.564-30.15-42.69-70.812-68.124-115.214-68.124H256zM204.23 213.88l14.99 9.966-20.074 30.19 30.192 20.073-9.965 14.99-30.19-20.073-20.074 30.192-14.99-9.966 20.07-30.192L144 238.99l9.965-14.99 30.19 20.072 20.074-30.19zm103.54 0 20.074 30.192L358.034 224 368 238.99l-30.19 20.072 20.07 30.192-14.99 9.965-20.072-30.193-30.19 20.073-9.966-14.99 30.192-20.073-20.073-30.19 14.99-9.966zM256 367c26 0 52.242 8.515 70.363 26.637l-12.726 12.726c-3.28-3.28-7.006-6.198-11.067-8.75-.06 1.55-.142 3.128-.27 4.737-.46 5.693-1.33 11.654-3.568 17.257-2.236 5.603-6.655 11.875-14.228 13.487-8.496 1.807-15.982-2.58-21.13-7.59-5.146-5.01-9.12-11.24-12.495-17.422-4.78-8.754-8.213-17.494-9.83-21.902-16.58 2.595-31.98 9.477-42.687 20.183l-12.726-12.726C203.757 375.515 230 367 256 367zm3.945 18.084c1.67 4.095 3.972 9.312 6.735 14.373 2.885 5.286 6.303 10.28 9.25 13.147 2.8 2.724 4.114 2.98 4.728 2.896.056-.07.543-.523 1.358-2.564 1.098-2.752 1.965-7.354 2.34-12.032.333-4.114.343-8.192.257-11.523-7.827-2.495-16.192-3.952-24.668-4.296z"/></svg>
-                Total Deaths
-              </p>
-              <p className="font-headline text-4xl font-bold text-gray-600">{formatNumber(player.deaths)}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-primary-dim text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-5 h-5 shrink-0" fill="currentColor"><path d="M85.875 20.97c-2.23 31.596-95.21 45.233-4.813 99.03-23.242-46.488 64.566-57.552 4.813-99.03zM278.53 23c-32.003 14.21-22.885 55.257-8.186 73 28 33.796-31.348 52.158-49.063-5.25-5.377 17.623-24.532 21.47-35.624 7.563-7.015-8.797-19.48-31.605-12.25-53.72-20.884 14.735-31.686 45.047-19.28 63.063 29.282 42.526-11.72 75.307-58.97 40.906 36.456 47.748 21.176 119.87-16.344 144.25 14.684-32.04 8.24-88.19-22.218-99.28 14.39 42.618-16.59 75.378-36.75 66.155V494.72h52.562c6.15-23.78 16.033-46.735 30.5-61.44 16.928-17.203 41.296-29.383 77.78-36.25l15.595-2.936-10.124-12.22c-20.233-24.38-33.406-59.518-33.406-98.655 0-37.723 12-71.733 30.906-95.94 18.906-24.205 44.29-38.53 72.125-38.53 27.837 0 53.19 14.325 72.095 38.53 18.905 24.208 30.906 58.218 30.906 95.94 0 38.246-12.073 73.187-31.374 97.374l-10.03 12.562 15.874 2.5c39.988 6.292 65.567 18.497 82.5 35.844 14.297 14.647 23.413 38.986 28.625 63.22h50.75V238.78c-7.012-23.793-17.18-46.354-32.625-51.093 19.492 39.968 1.278 129.343-61.906 141.313 26.715-22.383 45.213-78.483 35.03-101.594-34.788 47.587-79.102 2.555-34.437-43.22 29.676-30.412 39.924-68.813 10.5-110.967 9.104 40.185-37.766 84.93-69.875 56.655-21.68-19.09-10.235-60.918 23.75-71.844-26.954-9.334-47.72 2.8-52.562 21.595C295.337 62.535 272.155 51.37 278.53 23zm-74.155 242.844c-9.215-.212-19.062 3.635-29.063 13.28 14.593 29.555 39.886 25.69 67.938 13.188-9.878-14.53-23.517-26.116-38.875-26.468zm99.094 0c-15.36.352-28.998 11.938-38.876 26.47 28.05 12.5 53.345 16.365 67.937-13.19-10-9.645-19.846-13.492-29.06-13.28zM197.03 350.75c19.292 61.366 100.937 60.7 121.69 0-42.215 8.574-80.72 9.61-121.69 0z"/></svg>
-                K/D Ratio
-              </p>
-              <p className="font-headline text-4xl font-bold text-primary-dim">{kdRatio}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="lg:col-span-2 bg-surface-container-low/80 backdrop-blur-md p-8 border border-outline-variant/20 space-y-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
-          <div className="flex items-center justify-between border-b border-outline-variant/10 pb-4"><h3 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Movement</h3></div>
-          <div className="space-y-6">
-            <div>
-              <div className="flex justify-between items-end mb-2">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60.906 60.906" className="w-5 h-5 shrink-0" fill="currentColor"><path d="M19.472,3.504c2.436,0,4.411,1.975,4.411,4.411s-1.975,4.411-4.411,4.411s-4.411-1.975-4.411-4.411S17.036,3.504,19.472,3.504z M56.215,35.58c0.656,0,1.188,0.532,1.188,1.188s-0.532,1.188-1.188,1.188s-1.188-0.532-1.188-1.188C55.027,36.112,55.558,35.58,56.215,35.58z M57.525,41.412c0.332,0,0.601,0.27,0.601,0.602s-0.269,0.601-0.601,0.601s-0.602-0.269-0.602-0.601S57.193,41.412,57.525,41.412z M52.476,39.336c0.308,0,0.558,0.25,0.558,0.559c0,0.308-0.25,0.558-0.558,0.558c-0.309,0-0.559-0.25-0.559-0.558C51.918,39.586,52.168,39.336,52.476,39.336z M52.94,44.564l7.937-0.018l0.029,12.838l-7.936,0.018L52.94,44.564z M48.039,35.562c-5.486-1.654-9.902-6.232-12.686-11.101c-0.074-0.134-0.159-0.252-0.248-0.363c-0.082-0.291-0.191-0.578-0.325-0.858c-1.177-2.473-2.709-4.795-4.531-6.855c4.333-0.884,8.58-2.089,12.744-3.688c3.083-1.182,1.747-6.188-1.374-4.99c-5.702,2.19-11.623,3.77-17.684,4.565c-0.088,0.012-0.164,0.04-0.248,0.058c-0.917,0.095-1.808,0.49-2.557,1.248c-0.283,0.287-0.521,0.623-0.713,0.987c-3.674,0.54-7.009-0.527-10.16-2.707c-2.752-1.904-5.336,2.583-2.612,4.468c4.053,2.804,8.652,4.021,13.406,3.366c0.039,0.036,0.072,0.073,0.111,0.106c2.062,1.732,3.682,3.698,4.998,5.956c-6.192,1.682-12.586,4.956-13.597,11.445c-0.507,3.264,4.479,4.667,4.99,1.378c0.974-6.257,9.54-8.054,14.981-8.904c3.456,4.948,8.346,9.135,14.126,10.879C49.867,41.517,51.224,36.523,48.039,35.562z M0,56.874h7.934L12.53,44.04H0V56.874z"/></svg>
-                  Total Jumps
-                </span>
-                <span className="font-headline font-bold text-xl text-white">{formatNumber(player.jumps)}</span>
-              </div>
-              <div className="h-1.5 bg-background overflow-hidden border border-outline-variant/20"><div className="h-full bg-primary-dim w-[85%]"></div></div>
-            </div>
-            <div>
-              <div className="flex justify-between items-end mb-2">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 122.669 122.669" className="w-5 h-5 shrink-0" fill="currentColor"><circle cx="62.216" cy="18.908" r="18.908"/><path d="M108.929,84.604c-7.869-2.955-12.972-12.27-17.907-21.276c-4.648-8.484-9.04-16.499-16.229-20.908c-0.315-0.194-0.647-0.331-0.978-0.472c-2.106-1.407-4.474-2.442-6.887-3.034l-4.711,4.741l-4.567-4.793c-0.015,0.003-0.031,0.005-0.046,0.009c-2.238,0.535-4.435,1.458-6.426,2.702c-0.731,0.176-1.453,0.433-2.128,0.848c-7.08,4.34-11.523,12.555-16.228,21.251c-5.192,9.599-10.561,19.522-18.57,21.875c-3.89,1.142-6.118,5.222-4.976,9.111c0.938,3.2,3.866,5.274,7.04,5.274c0.684,0,1.38-0.096,2.07-0.299c0.645-0.189,1.261-0.418,1.878-0.646c-1.201,1.295-1.953,2.938-2.21,5.064c-0.421,3.479,0.663,6.891,3.055,9.608c6.744,7.666,25.191,8.935,35.587,9.01c0.021,0,0.042,0,0.063,0c2.205,0,4.213-0.831,5.745-2.188c1.532,1.357,3.541,2.188,5.745,2.188c0.021,0,0.042,0,0.062,0c10.396-0.075,28.843-1.344,35.587-9.01c2.393-2.718,3.477-6.13,3.056-9.607c-0.295-2.437-1.234-4.224-2.729-5.579c0.705,0.215,1.417,0.346,2.123,0.346c2.971,0,5.769-1.817,6.874-4.764C114.646,90.26,112.725,86.027,108.929,84.604z M42.864,75.885v17.629c-6.544,0.516-11.94,0.967-16.017,2.039C33.812,90.749,38.677,83.331,42.864,75.885z M81.569,93.802V76.509c4.246,7.319,9.298,14.535,16.708,19.115C94.067,94.557,88.442,94.209,81.569,93.802z"/></svg>
-                  Total Ducks
-                </span>
-                <span className="font-headline font-bold text-xl text-white">{formatNumber(player.ducks)}</span>
-              </div>
-              <div className="h-1.5 bg-background overflow-hidden border border-outline-variant/20"><div className="h-full bg-gray-500 w-[45%]"></div></div>
-            </div>
-          </div>
-        </div>
       </section>
       </div>
 

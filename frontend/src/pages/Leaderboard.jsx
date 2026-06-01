@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { cachedJson } from '../lib/cachedFetch';
+import { useDebounced, readPref, writePref } from '../lib/useDebounced';
+
+const PREF_KEY = 'sway:leaderboard:v1';
+const VALID_MODES = ['HNS', 'MIX', 'JUMPS'];
+const VALID_SORTS = ['KILLS', 'WEEKTIME', 'ELO', 'GAMES', 'WON', 'DISCONNECTS', 'STABS'];
+const VALID_DIRS = ['ASC', 'DESC'];
+const prefs = readPref(PREF_KEY, {});
 
 const getSteamId64 = (rawId) => {
   if (!rawId) return "";
@@ -18,10 +26,10 @@ const getSteamId64 = (rawId) => {
     if (/^\d+$/.test(idStr) && idStr.length < 16) {
       return (BigInt(idStr) + steam64Base).toString();
     }
-  } catch (e) {
+  } catch {
     return "";
   }
-  return idStr; 
+  return idStr;
 };
 
 const steamToAccountId = (steamId) => {
@@ -138,21 +146,30 @@ export default function Leaderboard() {
   const [totalPagesFromApi, setTotalPagesFromApi] = useState(1);
   const [loading, setLoading] = useState(true);
   
-  const [mode, setMode] = useState("HNS"); 
+  const [mode, setMode] = useState(VALID_MODES.includes(prefs.mode) ? prefs.mode : "HNS");
   const [searchTerm, setSearchTerm] = useState("");
-  
-  const [sortOrder, setSortOrder] = useState("KILLS"); 
-  const [sortDirection, setSortDirection] = useState("DESC");
 
-  const [jumpServer, setJumpServer] = useState("pre");
-  const [jumpType, setJumpType] = useState("LONGJUMP");
-  
+  const [sortOrder, setSortOrder] = useState(VALID_SORTS.includes(prefs.sortOrder) ? prefs.sortOrder : "KILLS");
+  const [sortDirection, setSortDirection] = useState(VALID_DIRS.includes(prefs.sortDirection) ? prefs.sortDirection : "DESC");
+
+  const [jumpServer, setJumpServer] = useState(prefs.jumpServer === "nopre" ? "nopre" : "pre");
+  const [jumpType, setJumpType] = useState(typeof prefs.jumpType === 'string' ? prefs.jumpType : "LONGJUMP");
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
+
+  const debouncedSearch = useDebounced(searchTerm, 250);
+
+  useEffect(() => {
+    writePref(PREF_KEY, { mode, sortOrder, sortDirection, jumpServer, jumpType });
+  }, [mode, sortOrder, sortDirection, jumpServer, jumpType]);
+
+  useEffect(() => { setCurrentPage(1); }, [mode, sortOrder, sortDirection, debouncedSearch]);
 
   useEffect(() => {
     if (mode === "JUMPS") return;
     setLoading(true);
+    const ctrl = new AbortController();
 
     const sortMap = {
       KILLS: "kills",
@@ -164,28 +181,26 @@ export default function Leaderboard() {
       STABS: "mixtotalstabs"
     };
 
-    // Fallback puternic pentru MIX
     const fallbackSort = mode === "MIX" ? "mixelo" : "kills";
     const sortBy = sortMap[sortOrder] || fallbackSort;
-    
+    const term = debouncedSearch.trim();
+
     const params = new URLSearchParams({
       mode,
       page: String(Math.max(currentPage - 1, 0)),
       size: String(itemsPerPage),
       sortBy,
       direction: sortDirection,
-      search: searchTerm.trim()
+      search: term
     });
 
-    fetch(`/api/players/page?${params.toString()}`)
+    fetch(`/api/players/page?${params.toString()}`, { signal: ctrl.signal })
       .then(res => {
         if (!res.ok) throw new Error("Nu s-a putut încărca leaderboard.");
         return res.json();
       })
       .then(data => {
-        if (!Array.isArray(data.content)) {
-          throw new Error("Răspuns invalid pentru leaderboard paginat.");
-        }
+        if (!Array.isArray(data.content)) throw new Error("Răspuns invalid pentru leaderboard paginat.");
         setPlayers(data.content);
         setTotalPlayers(Number(data.totalElements) || 0);
         setTotalPagesFromApi(Math.max(Number(data.totalPages) || 1, 1));
@@ -198,27 +213,20 @@ export default function Leaderboard() {
             size: String(itemsPerPage),
             sortBy,
             direction: sortDirection,
-            search: searchTerm.trim()
+            search: term
           });
           fetch(`/api/players/page?${prefetchParams.toString()}`).catch(() => {});
         }
       })
       .catch(err => {
+        if (err.name === 'AbortError') return;
         console.error("Eroare la aducerea datelor:", err);
-        // Fallback stil Hall of Shame: endpoint simplu, randare locală.
-        fetch('/api/players/all')
-          .then(res => res.ok ? res.json() : [])
+        cachedJson('/api/players/all', { ttl: 60000, signal: ctrl.signal })
+          .catch(() => [])
           .then(allPlayers => {
-            const term = searchTerm.trim().toLowerCase();
             let filtered = Array.isArray(allPlayers) ? allPlayers : [];
-
-            if (mode === "MIX") {
-              filtered = filtered.filter(p => (p.mixgames || p.mixGames || 0) > 0);
-            }
-
-            if (term) {
-              filtered = filtered.filter(p => String(p.name || "").toLowerCase().includes(term));
-            }
+            if (mode === "MIX") filtered = filtered.filter(p => (p.mixgames || p.mixGames || 0) > 0);
+            if (term) filtered = filtered.filter(p => String(p.name || "").toLowerCase().includes(term.toLowerCase()));
 
             const comparator = (a, b) => {
               const dir = sortDirection === "ASC" ? 1 : -1;
@@ -251,16 +259,18 @@ export default function Leaderboard() {
             setLoading(false);
           });
       });
-  }, [mode, currentPage, sortOrder, sortDirection, searchTerm]);
+
+    return () => ctrl.abort();
+  }, [mode, currentPage, sortOrder, sortDirection, debouncedSearch]);
 
   useEffect(() => {
     if (mode !== "JUMPS" || jumpDataLoaded) return;
     setLoading(true);
     Promise.all([
-      fetch('/api/players/all').then(res => res.json()),
-      fetch('/api/jumps/pre').then(res => res.ok ? res.json() : []).catch(() => []),
-      fetch('/api/jumps/nopre').then(res => res.ok ? res.json() : []).catch(() => []),
-      fetch('/api/cheaters').then(res => res.ok ? res.json() : []).catch(() => [])
+      cachedJson('/api/players/all', { ttl: 60000 }).catch(() => []),
+      cachedJson('/api/jumps/pre',   { ttl: 60000 }).catch(() => []),
+      cachedJson('/api/jumps/nopre', { ttl: 60000 }).catch(() => []),
+      cachedJson('/api/cheaters',    { ttl: 60000 }).catch(() => [])
     ])
       .then(([playersData, preData, nopreData, cheatersData]) => {
         const preMap = {};
@@ -418,11 +428,16 @@ export default function Leaderboard() {
       </div>
 
       <div className="bg-surface-container-low/40 border border-white/5 p-4 flex flex-col md:flex-row gap-4 shrink-0">
-        <input 
-          type="text" 
-          placeholder="SEARCH PLAYER... (name, id or profile link)" 
+        <input
+          type="search"
+          inputMode="search"
+          data-search-input
+          aria-label="Search players"
+          maxLength={64}
+          placeholder="SEARCH PLAYER... (name, id or profile link)"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Escape') { setSearchTerm(''); e.currentTarget.blur(); } }}
           className="flex-1 bg-surface-container-highest border border-white/10 text-white font-headline text-xs px-4 py-3 focus:outline-none focus:border-primary-dim transition-colors uppercase tracking-widest placeholder:text-gray-600"
         />
         
@@ -531,7 +546,12 @@ export default function Leaderboard() {
                   <td className="px-6 py-5 text-center font-bold text-gray-500">{player.trueRank}</td>
 
                   <td className="px-6 py-5">
-                    <Link to={`/profile/${player.steamid || player.steamId}`} className="flex items-center gap-4 cursor-pointer">
+                    <Link
+                      to={`/profile/${player.steamid || player.steamId}`}
+                      onMouseEnter={() => { import('./Profile').catch(() => {}); }}
+                      onFocus={() => { import('./Profile').catch(() => {}); }}
+                      className="flex items-center gap-4 cursor-pointer"
+                    >
                       {player.country && player.country.length > 0 && player.country !== 'un' ? (
                         <img src={`/countryflags/${player.country.toLowerCase()}.gif`} alt={player.country} loading="lazy" className="w-[24px] h-[18px] shadow-[0_0_5px_rgba(0,0,0,0.5)] opacity-90 group-hover:opacity-100 transition-opacity" onError={(e) => { e.target.style.display = 'none'; }} />
                       ) : (

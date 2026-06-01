@@ -1,23 +1,24 @@
 package sway.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
+import sway.config.CacheConfig;
 import sway.entity.ServerUtility;
 import sway.repository.ServerUtilityRepository;
 
 import java.util.List;
 
-@CrossOrigin(origins = {"https://sway.ovh", "http://localhost:5173"})
 @RestController
-@RequestMapping("/api/servers") // Adresa va fi fix http://localhost:8080/api/servers
+@RequestMapping("/api/servers")
 public class ServerUtilityController {
 
     @Autowired
     private ServerUtilityRepository serverUtilityRepository;
 
     @GetMapping
+    @Cacheable(CacheConfig.CACHE_SERVERS)
     public List<ServerUtility> getAllServers() {
-        // Returnează lista celor 3 servere (HNS PRE, NOPRE, MIX)
         return serverUtilityRepository.findAll();
     }
 }

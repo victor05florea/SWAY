@@ -1,75 +1,68 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { cachedJson, invalidate } from '../lib/cachedFetch';
+import { useDebounced, readPref, writePref } from '../lib/useDebounced';
+
+const BANS_PREF_KEY = 'sway:bans:v1';
+const VALID_FILTERS = ['ALL', 'BHOP', 'GSTRAFE', 'STRAFE', 'DLL', 'MANUAL'];
+const VALID_SORTS = ['NEWEST', 'OLDEST'];
+const bansPrefs = readPref(BANS_PREF_KEY, {});
 
 export default function Bans() {
   const [cheaters, setCheaters] = useState([]);
   const [loading, setLoading] = useState(true);
   
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterReason, setFilterReason] = useState("ALL");
-  const [sortOrder, setSortOrder] = useState("NEWEST");
-  
+  const [filterReason, setFilterReason] = useState(VALID_FILTERS.includes(bansPrefs.filterReason) ? bansPrefs.filterReason : "ALL");
+  const [sortOrder, setSortOrder] = useState(VALID_SORTS.includes(bansPrefs.sortOrder) ? bansPrefs.sortOrder : "NEWEST");
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
 
+  const debouncedSearch = useDebounced(searchTerm, 250);
+
   useEffect(() => {
-    const fetchCheaters = () => {
-      fetch("/api/cheaters")
-        .then(res => {
-          if (!res.ok) throw new Error(`Cheaters API failed: ${res.status}`);
-          return res.json();
-        })
-        .then(data => {
-          if (Array.isArray(data)) {
-            setCheaters(data);
-          } else if (Array.isArray(data?.content)) {
-            setCheaters(data.content);
-          } else if (Array.isArray(data?.data)) {
-            setCheaters(data.data);
-          } else {
-            setCheaters([]);
-          }
-          setLoading(false);
-        })
-        .catch(err => {
-          console.error("Eroare la baza de date de bans:", err);
-          fetch(`/api/cheaters?nocache=${Date.now()}`)
-            .then(res => res.ok ? res.json() : [])
-            .then(data => {
-              if (Array.isArray(data)) {
-                setCheaters(data);
-              } else if (Array.isArray(data?.content)) {
-                setCheaters(data.content);
-              } else if (Array.isArray(data?.data)) {
-                setCheaters(data.data);
-              } else {
-                setCheaters([]);
-              }
-              setLoading(false);
-            })
-            .catch(() => {
-              setCheaters([]);
-              setLoading(false);
-            });
-        });
+    writePref(BANS_PREF_KEY, { filterReason, sortOrder });
+  }, [filterReason, sortOrder]);
+
+  useEffect(() => {
+    const normalize = (data) => {
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data?.content)) return data.content;
+      if (Array.isArray(data?.data)) return data.data;
+      return [];
     };
 
-    fetchCheaters();
-    const interval = setInterval(fetchCheaters, 30000);
-    return () => clearInterval(interval);
+    const loadCheaters = (force = false) => {
+      if (force) invalidate('/api/cheaters');
+      cachedJson('/api/cheaters', { ttl: 60000 })
+        .then(data => { setCheaters(normalize(data)); setLoading(false); })
+        .catch(() => { setCheaters([]); setLoading(false); });
+    };
+
+    loadCheaters();
+
+    let interval = null;
+    const start = () => { if (interval == null) interval = setInterval(() => loadCheaters(true), 30000); };
+    const stop = () => { if (interval != null) { clearInterval(interval); interval = null; } };
+    const onVisibility = () => {
+      if (document.hidden) stop(); else { loadCheaters(true); start(); }
+    };
+    if (!document.hidden) start();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => { document.removeEventListener('visibilitychange', onVisibility); stop(); };
   }, []);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterReason, sortOrder]);
+  }, [debouncedSearch, filterReason, sortOrder]);
 
-  // OPTIMIZARE: useMemo asigură că filtrarea și sortarea se fac instant fără a bloca interfața
   const processedData = useMemo(() => {
-    const safeTerm = searchTerm.toLowerCase();
+    const safeTerm = debouncedSearch.toLowerCase();
     let filtered = (Array.isArray(cheaters) ? cheaters : []).filter(c => {
       const safeName = String(c?.name || "").toLowerCase();
       const safeSteamId = c?.steamid != null ? String(c.steamid) : "";
-      return safeName.includes(safeTerm) || safeSteamId.includes(searchTerm);
+      return safeName.includes(safeTerm) || safeSteamId.includes(debouncedSearch);
     });
 
     if (filterReason !== "ALL") {
@@ -92,7 +85,7 @@ export default function Bans() {
       const rightId = Number(b?.id || 0);
       return sortOrder === "NEWEST" ? rightId - leftId : leftId - rightId;
     });
-  }, [cheaters, searchTerm, filterReason, sortOrder]);
+  }, [cheaters, debouncedSearch, filterReason, sortOrder]);
 
   const totalPages = Math.ceil(processedData.length / itemsPerPage) || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -200,11 +193,16 @@ export default function Bans() {
       </div>
 
       <div className="bg-surface-container-low/40 border border-white/5 p-4 flex flex-col md:flex-row gap-4 shrink-0">
-        <input 
-          type="text" 
-          placeholder="SEARCH PLAYER..." 
+        <input
+          type="search"
+          inputMode="search"
+          data-search-input
+          aria-label="Search banned players"
+          maxLength={64}
+          placeholder="SEARCH PLAYER..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Escape') { setSearchTerm(''); e.currentTarget.blur(); } }}
           className="flex-1 bg-surface-container-highest border border-white/10 text-white font-headline text-xs px-4 py-3 focus:outline-none focus:border-primary-dim transition-colors uppercase tracking-widest placeholder:text-gray-600"
         />
         
@@ -256,8 +254,10 @@ export default function Bans() {
               <tr key={cheater.id} className="hover:bg-white/[0.03] transition-colors group">
                 
                 <td className="px-6 py-5">
-                  <Link 
-                    to={`/profile/${cheater.steamid}`} 
+                  <Link
+                    to={`/profile/${cheater.steamid}`}
+                    onMouseEnter={() => { import('./Profile').catch(() => {}); }}
+                    onFocus={() => { import('./Profile').catch(() => {}); }}
                     className="flex items-center gap-4 cursor-pointer"
                     title="View Sway Profile"
                   >

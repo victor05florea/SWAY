@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaSteam } from 'react-icons/fa';
+import { cachedJson } from '../lib/cachedFetch';
 
 export default function Profile() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [jumpMode, setJumpMode] = useState("PRE");
   const [mixRank, setMixRank] = useState("UNRANKED");
   const [cheaterInfo, setCheaterInfo] = useState(null);
@@ -26,7 +26,7 @@ export default function Profile() {
             return res.json();
           }),
           fetch(`/api/players/${id}/rank/mix`).then(res => res.ok ? res.text() : "0").catch(() => "0"),
-          fetch('/api/cheaters').then(res => res.ok ? res.json() : []).catch(() => [])
+          cachedJson('/api/cheaters', { ttl: 60000 }).catch(() => [])
         ])
           .then(([playerData, mixRankData, cheatersData]) => {
             if (playerData.error || !playerData.name) throw new Error("Date invalide primite de la server.");
@@ -66,8 +66,23 @@ export default function Profile() {
     };
 
     fetchProfileData();
-    const interval = setInterval(fetchProfileData, 30000);
-    return () => clearInterval(interval);
+    let interval = null;
+    const start = () => { if (interval == null) interval = setInterval(fetchProfileData, 30000); };
+    const stop = () => { if (interval != null) { clearInterval(interval); interval = null; } };
+    const onVisibility = () => {
+      if (document.hidden) {
+        stop();
+      } else {
+        fetchProfileData();
+        start();
+      }
+    };
+    if (!document.hidden) start();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      stop();
+    };
 
   }, [id]);
 

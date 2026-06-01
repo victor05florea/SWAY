@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useStream } from '../lib/useStream';
 
 export default function Home() {
   const [totalPlayers, setTotalPlayers] = useState(0);
@@ -12,42 +13,100 @@ export default function Home() {
     "fj_mansion.webp", "hns_avenue.webp", "hns_backalot.webp", "hns_devblocks_remake.webp", "hns_freeway.webp", "hns_mini_bbcity.webp", "hns_mini_floppy.webp", "hns_mini_jukecity.webp", "hns_mini_rooftops.webp", "hns_rooftops_remake.webp", "hns_mini_tyo.webp", "hns_trickpark.webp", "hns_boost_bbcity.webp", "hns_skyline.webp", "hns_boost_dust2.webp", "hns_boost_qube.webp", "hns_boost_mafia.webp", "hns_boost_jukecity.webp", "hns_oilrig.webp", "hns_miami.webp", "hns_half.webp", "hns_sunset.webp", "hns_rooftops.webp", "hns_rooftops_v5.webp", "hns_virtual.webp", "hns_iceskating.webp", "hns_jhard.webp", "hns_zen.webp", "hns_ruins.webp", "hns_liberation.webp", "hns_kitty_pro.webp", "hns_funk.webp", "hns_flowtown.webp", "hns_floppytown.webp", "hns_esip.webp", "hns_brickworld.webp", "hns_bakgard.webp", "hns_assault_inside.webp", "hns_jukecity.webp", "hns_devblocks.webp", "hns_tyo.webp", "hns_bbcity.webp"
   ];
 
-  useEffect(() => {
-    const fetchPlayers = () => {
-      fetch("/api/players/count")
-        .then(res => res.text()) // Folosim text() pentru a nu pica la un număr simplu
-        .then(text => setTotalPlayers(parseInt(text) || 0))
-        .catch(err => console.error("Error fetching total players:", err));
+  const [streamFellBack, setStreamFellBack] = useState(false);
+  const lastPotwHashRef = useRef("");
 
-      fetch("/api/players/potw")
+  useEffect(() => {
+    const ctrl = new AbortController();
+
+    const fetchPotw = () => {
+      fetch("/api/players/potw", { signal: ctrl.signal })
         .then(res => {
-            if (!res.ok) throw new Error("POTW not found");
-            return res.json();
+          if (!res.ok) throw new Error("POTW not found");
+          return res.json();
         })
         .then(data => {
+          const hash = data ? JSON.stringify([data.steamid, data.name, data.weektime, data.kills]) : "";
+          if (hash !== lastPotwHashRef.current) {
+            lastPotwHashRef.current = hash;
             setPotw(data);
+          }
         })
-        .catch(err => console.error("Error fetching POTW:", err));
+        .catch(err => { if (err.name !== 'AbortError') console.error("Error fetching POTW:", err); });
     };
 
-    const fetchServers = () => {
-      fetch("/api/servers") 
+    const fetchInitial = () => {
+      fetch("/api/players/count", { signal: ctrl.signal })
+        .then(res => res.text())
+        .then(text => setTotalPlayers(parseInt(text) || 0))
+        .catch(err => { if (err.name !== 'AbortError') console.error("Error fetching total players:", err); });
+      fetch("/api/servers", { signal: ctrl.signal })
         .then(res => res.json())
         .then(data => setServers(data))
-        .catch(err => console.error("Error fetching servers:", err));
+        .catch(err => { if (err.name !== 'AbortError') console.error("Error fetching servers:", err); });
     };
 
-    fetchPlayers();
-    fetchServers();
+    fetchInitial();
+    fetchPotw();
 
-    const playersInterval = setInterval(fetchPlayers, 30000);
-    const serversInterval = setInterval(fetchServers, 10000);
+    let potwInterval = null;
+    let fallbackInterval = null;
+
+    const startPotw = () => {
+      if (potwInterval == null) potwInterval = setInterval(fetchPotw, 30000);
+    };
+    const stopPotw = () => {
+      if (potwInterval != null) { clearInterval(potwInterval); potwInterval = null; }
+    };
+
+    const startFallback = () => {
+      if (fallbackInterval == null) fallbackInterval = setInterval(() => {
+        fetch("/api/players/count").then(r => r.text()).then(t => setTotalPlayers(parseInt(t) || 0)).catch(() => {});
+        fetch("/api/servers").then(r => r.json()).then(setServers).catch(() => {});
+      }, 20000);
+    };
+    const stopFallback = () => {
+      if (fallbackInterval != null) { clearInterval(fallbackInterval); fallbackInterval = null; }
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        stopPotw();
+        stopFallback();
+      } else {
+        fetchPotw();
+        startPotw();
+        if (streamFellBack) startFallback();
+      }
+    };
+    if (!document.hidden) {
+      startPotw();
+      if (streamFellBack) startFallback();
+    }
+    document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
-      clearInterval(playersInterval);
-      clearInterval(serversInterval);
+      ctrl.abort();
+      document.removeEventListener('visibilitychange', onVisibility);
+      stopPotw();
+      stopFallback();
     };
+  }, [streamFellBack]);
+
+  const handleStreamFallback = useCallback(() => {
+    setStreamFellBack(true);
   }, []);
+
+  useStream({
+    servers: (data) => {
+      try { setServers(JSON.parse(data)); } catch { /* ignore malformed */ }
+    },
+    count: (data) => {
+      const n = parseInt(data, 10);
+      if (!Number.isNaN(n)) setTotalPlayers(n);
+    },
+    ping: () => { /* keep-alive only */ }
+  }, { onFallback: handleStreamFallback });
 
   const categorizeMaps = (maps) => {
     const categories = {
@@ -111,23 +170,25 @@ export default function Home() {
          
          // MAGIA AICI: Returnăm direct numărul (ex: 371937544)
          return accountId.toString(); 
-       } catch(e) { return str; }
+       } catch { return str; }
     }
-    return str; 
+    return str;
   };
 
   // 2. Funcția care repară caracterele speciale din nume (UTF-8 Decode)
   const fixEncoding = (str) => {
     if (!str) return "";
     const clean = String(str)
+      // eslint-disable-next-line no-control-regex
       .replace(/^[\u0000-\u001F\u007F-\u009F\uFEFF]+/, "")
+      // eslint-disable-next-line no-control-regex
       .replace(/[\u0000-\u001F\u007F-\u009F]/g, "")
       .trim();
 
     if (/%[0-9A-Fa-f]{2}/.test(clean)) {
       try {
         return decodeURIComponent(clean);
-      } catch (e) {
+      } catch {
         return clean;
       }
     }
@@ -191,7 +252,7 @@ export default function Home() {
       <div className="space-y-1.5 flex flex-col">
         {players.length > 0 ? players.map((player, index) => (
           
-          <Link key={index} to={`/profile/${player.id}`} className="flex items-center gap-2 group/player" title={`View Profile: ${player.name}`}>
+          <Link key={index} to={`/profile/${player.id}`} onMouseEnter={() => { import('./Profile').catch(() => {}); }} className="flex items-center gap-2 group/player" title={`View Profile: ${player.name}`}>
             {player.flag === 'un' || !player.flag ? (
                <span className="text-[10px] opacity-50 font-mono min-w-[16px] text-center">--</span>
             ) : (
@@ -261,11 +322,15 @@ export default function Home() {
           <section className="mb-14 relative z-10 flex justify-center">
             <div className="bg-gradient-to-r from-surface-container-low/20 via-primary-dim/10 to-surface-container-low/20 border border-primary-dim/20 backdrop-blur-md rounded-2xl px-6 md:px-8 py-5 flex flex-col md:flex-row items-center gap-6 shadow-[0_0_30px_rgba(233,0,54,0.05)] hover:shadow-[0_0_30px_rgba(233,0,54,0.15)] transition-all duration-500">
               <div className="flex items-center gap-5">
-                <Link to={`/profile/${potw.steamId || potw.steamid || potw.id}`} className="relative group/avatar cursor-pointer block">
-                  <img 
-                    src={potw.avatarUrl || potw.avatarurl || "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"} 
+                <Link to={`/profile/${potw.steamId || potw.steamid || potw.id}`} onMouseEnter={() => { import('./Profile').catch(() => {}); }} className="relative group/avatar cursor-pointer block">
+                  <img
+                    src={potw.avatarUrl || potw.avatarurl || "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"}
                     alt={potw.name}
-                    loading="lazy"
+                    loading="eager"
+                    fetchpriority="high"
+                    decoding="async"
+                    width="64"
+                    height="64"
                     className="w-14 h-14 md:w-16 md:h-16 rounded-xl object-cover border-2 border-primary-dim/30 shadow-[0_0_15px_rgba(233,0,54,0.2)] transition-transform duration-300 group-hover/avatar:scale-105 group-hover/avatar:border-primary-dim"
                     onError={(e) => { e.target.src = "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg" }}
                   />

@@ -94,3 +94,5 @@ backend/HELP.md
 backend/.mvn/wrapper/maven-wrapper.jar
 logos/
 logo.png
+# Build artifact zip (frontend dist)
+dist.zip

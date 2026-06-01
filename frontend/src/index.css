@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -21,7 +20,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Pattern-ul subtil cerut in design */
 .grid-pattern {
   background-image: radial-gradient(#494847 1px, transparent 1px);
   background-size: 24px 24px;
@@ -32,7 +30,33 @@ body {
   background: linear-gradient(135deg, rgba(233, 0, 54, 0.1) 0%, rgba(14, 14, 14, 0) 50%);
 }
 
-/* Suprascriem scrollbar-ul sa fie brutalist */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #0e0e0e; }
-::-webkit-scrollbar-thumb { background: #e90036; }
+::-webkit-scrollbar { width: 6px; background: transparent; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(233, 0, 54, 0); border-radius: 6px; transition: background-color 0.4s ease-out; }
+html.is-scrolling ::-webkit-scrollbar-thumb { background: rgba(233, 0, 54, 0.6); }
+html.is-scrolling ::-webkit-scrollbar-thumb:hover { background: rgba(233, 0, 54, 1); }
+
+@keyframes slideshow {
+  0%   { opacity: 0; transform: scale(1.1); }
+  4%   { opacity: 1; }
+  21%  { opacity: 1; }
+  25%  { opacity: 0; transform: scale(1); }
+  100% { opacity: 0; }
+}
+.slideshow-container {
+  position: fixed; inset: 0; z-index: -10; background: #0a0a0c; overflow: hidden;
+}
+.slide {
+  position: absolute; inset: 0; background-size: cover; background-position: center;
+  opacity: 0; animation: slideshow 60s linear infinite;
+  filter: brightness(0.15) blur(4px) saturate(0.5);
+  will-change: opacity, transform;
+}
+@media (max-width: 767px) {
+  .slide { animation: none; opacity: 0; filter: brightness(0.25) blur(1px) saturate(0.7); }
+  .slide:first-child { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide { animation: none; opacity: 0; }
+  .slide:first-child { opacity: 1; }
+}
